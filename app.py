@@ -18,14 +18,13 @@ else:
     st.stop()
 
 # ------------------------------------------------------------------
-# 2. AUTOMATED WEB PROVISIONING (Replaces terminal setup.py run)
+# 2. AUTOMATED WEB PROVISIONING
 # ------------------------------------------------------------------
 DB_PATH = os.path.join("data", "mock_data.db")
 
 if not os.path.exists(DB_PATH):
     st.info("📦 First-time Web Server initialization detected. Compiling database partitions...")
     try:
-        # Import the provisioning logic from your repository setup file dynamically
         from setup import provision_enterprise_workspace
         provision_enterprise_workspace()
         st.success("✨ Local data layout successfully provisioned on web instance!")
@@ -34,18 +33,19 @@ if not os.path.exists(DB_PATH):
         st.stop()
 
 # ------------------------------------------------------------------
-# 3. LIVE SYSTEM TELEMETRY SIDEBAR HANDLER
+# 3. LIVE SYSTEM TELEMETRY SIDEBAR HANDLER (Aligned to correct Schemas)
 # ------------------------------------------------------------------
 conn = sqlite3.connect(DB_PATH)
 with st.sidebar:
     st.markdown("### 📊 Enterprise DB Telemetry")
-    for table in ["sales", "products", "marketing_campaign_metrics", "social_media", "support_cases"]:
+    target_tables = ["email_campaigns", "campaign_metrics", "revenue_attribution", "recipient_feedback"]
+    for table in target_tables:
         try:
             count_df = pd.read_sql_query(f"SELECT COUNT(*) as cnt FROM {table}", conn)
             count = count_df.iloc[0]['cnt']
             st.caption(f"💾 **{table}**: {count} Verified Rows in web partition.")
-        except Exception:
-            st.caption(f"⚠️ **{table}**: Schema partition locked or loading.")
+        except Exception as e:
+            st.caption(f"⚠️ **{table}**: Schema partition locked or missing.")
 conn.close()
 
 # ------------------------------------------------------------------
@@ -54,15 +54,21 @@ conn.close()
 engine = EnterpriseCoWorkEngine(db_path=DB_PATH)
 
 st.markdown("Select an onboarded enterprise quick-prompt to launch analysis:")
-user_query = st.chat_input("Query web workspace files...")
 
+# Fix: Correctly break down columns layout assignment and extraction
 layout_cols = st.columns(3)
-if layout_cols.button("📋 Q1: Trend Analysis"):
-    user_query = STARTER_QUESTIONS[0]
-if layout_cols.button("⚠️ Q2: Jacket Flaw Auditing"):
-    user_query = STARTER_QUESTIONS[1]
-if layout_cols.button("📈 Q3: Growth Correlation Run"):
-    user_query = STARTER_QUESTIONS[2]
+selected_query = None
+
+if layout_cols[0].button("📋 Q1: Trend Analysis", use_container_width=True):
+    selected_query = STARTER_QUESTIONS[0]
+if layout_cols[1].button("⚠️ Q2: Feedback Auditing", use_container_width=True):
+    selected_query = STARTER_QUESTIONS[1]
+if layout_cols[2].button("📈 Q3: Growth Correlation Run", use_container_width=True):
+    selected_query = STARTER_QUESTIONS[2]
+
+# Ingest free-form input or fall back to quick buttons
+input_query = st.chat_input("Query web workspace files...")
+user_query = input_query if input_query else selected_query
 
 # ------------------------------------------------------------------
 # 5. CORE EXECUTION AND LIVE VISUALIZATION INTERCEPTOR
@@ -79,14 +85,19 @@ if user_query:
             if any(word in user_query.lower() for word in ["trend", "sales", "grow", "correlate"]):
                 st.info("📊 Local Visualization Handler Triggered:")
                 conn = sqlite3.connect(DB_PATH)
+                
+                # Fix: Aligned fallback visualization query directly to the real schema
                 viz_df = pd.read_sql_query("""
-                    SELECT s.date, p.category, SUM(s.sales_amount) as revenue_total 
-                    FROM sales s 
-                    JOIN products p ON s.product_id = p.product_id 
-                    GROUP BY s.date, p.category
+                    SELECT conversion_date AS date, product_category AS category, SUM(attributed_sales) as revenue_total 
+                    FROM revenue_attribution 
+                    GROUP BY conversion_date, product_category
                 """, conn)
                 conn.close()
-                st.line_chart(data=viz_df, x="date", y="revenue_total", color="category")
+                
+                if not viz_df.empty:
+                    st.line_chart(data=viz_df, x="date", y="revenue_total", color="category")
+                else:
+                    st.warning("No data returned for historical visualization layer mapping.")
                 
         except Exception as runtime_fault:
             st.error(f"Engine Exception Met: {runtime_fault}")
