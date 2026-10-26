@@ -12,8 +12,13 @@ class EnterpriseCoWorkEngine:
         # Bind connection to local repository file footprint
         self.db = SQLDatabase.from_uri(f"sqlite:///{db_path}")
         
-        # Initialize Groq Model Core Runtime 
-        self.llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0)
+        # ⚡ PRODUCTION FIX: Swapped decommissioned 'llama-3.3-70b-versatile' 
+        # with 'qwen/qwen3.6-27b' for superior, active tool/SQL generation.
+        # Alternative fallback: "llama3-70b-8192"
+        self.llm = ChatGroq(
+            model="qwen/qwen3.6-27b", 
+            temperature=0
+        )
         
         # Compile agent logic architecture executor 
         self.agent_executor = create_sql_agent(
