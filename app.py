@@ -81,7 +81,8 @@ if user_query:
                 response_text = engine.execute_analytical_query(user_query)
                 st.markdown(response_text)
                 
-            if any(word in user_query.lower() for word in ["trend", "sales", "grow", "correlate"]):
+            # ✅ FIXED: Standardized substring check matches text criteria accurately 
+            if any(word in user_query.lower() for word in ["trend", "sales", "grow", "correlate", "quarter"]):
                 st.info("📊 Local Visualization Handler Triggered:")
                 conn = sqlite3.connect(DB_PATH)
                 viz_df = pd.read_sql_query("""
@@ -89,9 +90,14 @@ if user_query:
                     FROM sales s 
                     JOIN products p ON s.product_id = p.product_id 
                     GROUP BY s.date, p.category
+                    ORDER BY s.date ASC
                 """, conn)
                 conn.close()
-                st.line_chart(data=viz_df, x="date", y="revenue_total", color="category")
+                
+                if not viz_df.empty:
+                    st.line_chart(data=viz_df, x="date", y="revenue_total", color="category")
+                else:
+                    st.caption("ℹ️ Telemetry partition read successfully, but row output array was empty.")
                 
         except Exception as runtime_fault:
             st.error(f"Engine Exception Met: {runtime_fault}")
