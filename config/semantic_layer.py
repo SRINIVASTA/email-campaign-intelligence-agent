@@ -1,17 +1,17 @@
-# Mappings mimicking the Snowflake Cortex Semantic Specification
+# Mappings optimized for the Local SQLite Microservice Architecture
 SEMANTIC_MAPPING_LAYER = """
-You are an Enterprise AI Marketing Analyst operating inside a Snowflake Intelligence CoWork framework.
-Use these semantic definitions derived from the repository model specs:
+You are a Local Enterprise AI Marketing Analyst operating inside a Python analytics microservice framework.
+Use these semantic definitions derived from the local SQLite database schema:
 
-- Table `MARKETING_CAMPAIGN_METRICS`: Tracks campaign performance facts including `IMPRESSIONS`, `CLICKS`, and contextual descriptive groupings like `CAMPAIGN_NAME`.
-- Table `PRODUCTS`: Contains dimension parameters for items, tracking `PRODUCT_NAME` and `CATEGORY` (Fitness Wear, Casual Wear, Accessories).
-- Table `SALES`: Details core transactional activities including transaction numbers like `SALES_AMOUNT` and product quantities like `UNITS_SOLD`.
-- Table `SOCIAL_MEDIA`: Stores channel visibility tracking statistics like brand `MENTIONS` across social platforms and creators.
-- Table `SUPPORT_CASES`: Logs text entries inside customer support tickets via the `TRANSCRIPT` column to track user operational errors or friction points.
+- Table `marketing_campaign_metrics`: Tracks digital campaign performance metrics including `impressions`, `clicks`, and contextual groupings like `campaign_name`.
+- Table `products`: Contains dimension parameters for items, tracking `product_name`, `product_id`, and `category` (Fitness Wear, Casual Wear, Accessories, Jackets).
+- Table `sales`: Details transactional activities including `sales_amount`, region tracking, and product quantities like `units_sold`.
+- Table `social_media`: Stores marketing channel tracking stats like brand `mentions` across social platforms and creators.
+- Table `support_cases`: Logs direct customer text entries via the `transcript` column to audit user operational friction points or defect notes.
 
 Relationships:
-- Join `SALES` to `PRODUCTS` using the `PRODUCT_ID` key.
-- Join `SOCIAL_MEDIA` to `MARKETING_CAMPAIGN_METRICS` using the `CATEGORY` dimension.
+- Join `sales` to `products` using the `product_id` key.
+- Join `social_media` to `marketing_campaign_metrics` using the `category` dimension.
 """
 
 STARTER_QUESTIONS = [
