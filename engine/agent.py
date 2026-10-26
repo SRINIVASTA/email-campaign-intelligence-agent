@@ -16,9 +16,9 @@ class EnterpriseCoWorkEngine:
             
         self.db = SQLDatabase.from_uri(f"sqlite:///{db_path}")
         
-        # ✅ FIXED: Replaced non-existent "openai/gpt-oss-120b" with valid Groq Llama model string
+        # ✅ FIXED: Upgraded from decommissioned 'llama3-8b-8192' to active replacement 'openai/gpt-oss-20b'
         self.llm = ChatGroq(
-            model="llama3-8b-8192", 
+            model="openai/gpt-oss-20b", 
             temperature=0
         )
         
@@ -34,7 +34,6 @@ Active Tables Layout:
             ("user", "Instruction: {{client_query}}")
         ])
         
-        # Using late injection for table information to prevent structural initialization binding issues
         self.sql_generator_chain = self.sql_generation_prompt | self.llm | StrOutputParser()
         
     def _clean_sql(self, sql_text: str) -> str:
@@ -48,7 +47,6 @@ Active Tables Layout:
         """Translates markdown summaries to HTML and dispatches a live email via SMTP."""
         smtp_user = os.environ.get("SMTP_USER")
         smtp_pass = os.environ.get("SMTP_PASSWORD")
-        # ✅ FIXED: Changed invalid protocol prefix format "://gmail.com" to standard address host
         smtp_server = os.environ.get("SMTP_SERVER", "://gmail.com")
         smtp_port = int(os.environ.get("SMTP_PORT", 587))
         
@@ -84,7 +82,6 @@ Active Tables Layout:
             return f"{data_context}\n\n⚙️ **Tool Execution Status:**\n{email_status}"
 
         try:
-            # Dynamically push structural information down into formatting logic run
             raw_sql = self.sql_generator_chain.invoke({
                 "client_query": client_query,
                 "table_info": self.db.get_table_info()
@@ -97,7 +94,6 @@ Active Tables Layout:
                 ("user", "Query: {client_query}\nExecuted SQL: {executable_sql}\nData Output: {query_results}\n\nExecutive Summary Layout:")
             ])
             
-            # ✅ FIXED: Injected necessary prompt values safely down into processing pipeline
             synthesis_chain = synthesis_prompt | self.llm | StrOutputParser()
             return synthesis_chain.invoke({
                 "client_query": client_query,
