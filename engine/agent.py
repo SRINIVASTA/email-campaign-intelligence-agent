@@ -12,11 +12,11 @@ class EnterpriseCoWorkEngine:
         # Bind connection to local repository file footprint
         self.db = SQLDatabase.from_uri(f"sqlite:///{db_path}")
         
-        # ⚡ PRODUCTION FIX: Swapped decommissioned 'llama-3.3-70b-versatile' 
-        # with 'qwen/qwen3.6-27b' for superior, active tool/SQL generation.
-        # Alternative fallback: "llama3-70b-8192"
+        # ⚡ OPENAI OPEN-WEIGHT PRODUCTION LAYER:
+        # Initialized with 'openai/gpt-oss-120b' hosted natively on Groq.
+        # This leverages 120B parameter reasoning depth for structured SQL extraction blocks.
         self.llm = ChatGroq(
-            model="qwen/qwen3.6-27b", 
+            model="openai/gpt-oss-120b", 
             temperature=0
         )
         
