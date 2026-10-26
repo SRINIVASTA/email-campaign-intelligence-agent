@@ -1,13 +1,14 @@
 import sqlite3
 import os
 
-def provision_email_intelligence_workspace():
+def provision_enterprise_workspace():
     # Enforce structured enterprise layout directories
     os.makedirs("data", exist_ok=True)
     os.makedirs("engine", exist_ok=True)
     os.makedirs("config", exist_ok=True)
     
-    db_path = os.path.join("data", "email_marketing_mock.db")
+    # MATCH THE PATH EXPECTED BY YOUR FRONTEND WEB HUB
+    db_path = os.path.join("data", "mock_data.db")
     
     if os.path.exists(db_path):
         os.remove(db_path)
@@ -15,7 +16,7 @@ def provision_email_intelligence_workspace():
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     
-    print("🔨 Provisioning email analytics database schemas...")
+    print("📂 Provisioning email analytics database schemas...")
 
     # Table 1: CAMPAIGNS (Core operational metadata)
     cursor.execute("""
@@ -82,12 +83,12 @@ def provision_email_intelligence_workspace():
     cursor.executemany("INSERT INTO revenue_attribution VALUES (?,?,?,?,?,?)", [
         ("ATT-101", "CMP-001", "Fitness Wear", 150, 7500.00, "2025-06-16"),
         ("ATT-102", "CMP-001", "Accessories", 80, 2400.00, "2025-06-17"),
-        ("ATT-103", "CMP-002", "Fitness Wear", 420, 21000.00, "2025-07-21"), # Large spike
+        ("ATT-103", "CMP-002", "Fitness Wear", 420, 21000.00, "2025-07-21"), 
         ("ATT-104", "CMP-003", "Casual Wear", 310, 15500.00, "2025-08-06"),
         ("ATT-105", "CMP-003", "Jackets", 90, 10800.00, "2025-08-07")
     ])
     
-    # Unstructured Feedback Logs (Replaces Cortex Search functionality)
+    # Unstructured Feedback Logs
     cursor.executemany("INSERT INTO recipient_feedback VALUES (?,?,?,?,?)", [
         ("FB-201", "CMP-002", "Complaint", "The discount code 'FLASH24' provided in the email threw an error at checkout.", "2025-07-20"),
         ("FB-202", "CMP-002", "Unsubscribe request", "Stop emailing me twice a day, it is too much spam.", "2025-07-21"),
@@ -96,7 +97,7 @@ def provision_email_intelligence_workspace():
     
     conn.commit()
     conn.close()
-    print("✨ Enterprise workspace initialized successfully. Core tables nested in data/ email_marketing_mock.db.")
+    print("🛠️ Enterprise workspace initialized successfully. Core tables nested in data/mock_data.db.")
 
 if __name__ == "__main__":
-    provision_email_intelligence_workspace()
+    provision_enterprise_workspace()
