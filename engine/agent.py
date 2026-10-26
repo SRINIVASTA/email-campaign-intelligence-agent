@@ -31,7 +31,7 @@ class EnterpriseCoWorkEngine:
             conn.close()
 
     def send_email_tool(self, body_text: str, recipient_email: str = None, subject: str = "Local Engine Agent Operations Audit") -> str:
-        """Dispatches HTML alerts via standard SMTP layer client."""
+        """Dispatches HTML alerts via standard SMTP layer client using local machine environment settings."""
         smtp_user = os.environ.get("SMTP_USER")
         smtp_pass = os.environ.get("SMTP_PASSWORD")
         smtp_server = os.environ.get("SMTP_SERVER", "://gmail.com")
@@ -41,7 +41,7 @@ class EnterpriseCoWorkEngine:
             recipient_email = smtp_user
             
         if not smtp_user or not smtp_pass:
-            return "⚠️ Custom Tool Alert: SMTP credentials missing in Environment Settings."
+            return "⚠️ Custom Tool Alert: SMTP credentials missing in local environment settings."
 
         try:
             html_body = body_text.replace("\n", "<br>").replace("**", "<b>").replace("*", "<i>")
@@ -57,7 +57,7 @@ class EnterpriseCoWorkEngine:
             server.sendmail(smtp_user, recipient_email, msg.as_string())
             server.quit()
             
-            return f"✅ Summary report dispatched to {recipient_email}."
+            return f"✅ Dispatch complete! Report successfully sent to {recipient_email}."
         except Exception as smtp_err:
             return f"❌ Custom tool failed: {smtp_err}"
 
@@ -101,12 +101,14 @@ class EnterpriseCoWorkEngine:
         return anomalies
 
     def execute_analytical_query(self, client_query: str) -> str:
-        """Intercepts prompts to run direct local calculations alongside the processing layer."""
-        if any(word in client_query.lower() for word in ["email", "send a summary"]):
-            data_context = self.execute_analytical_query("Show me the trend of sales by product category across all four quarters of 2025")
-            email_status = self.send_email_tool(body_text=data_context, subject="Local Analytics System Report")
-            return f"{data_context}\n\n⚙️ **Tool Execution Status:**\n{email_status}"
+        """Programmatically intercepts specific quick-prompts to deliver data matching the exact scope."""
+        
+        # 📊 Step 1: Detect explicit query context definitions
+        is_q1 = "four quarters" in client_query.lower() or "q1" in client_query.lower()
+        is_q2 = "jackets recently" in client_query.lower() or "q2" in client_query.lower()
+        is_q3 = "fitness wear" in client_query.lower() or "q3" in client_query.lower()
 
+        # 🗄️ Step 2: Compile native local metrics
         anomalies = self.detect_critical_anomalies()
         correlation_results = self.calculate_growth_correlation()
         
@@ -122,6 +124,7 @@ class EnterpriseCoWorkEngine:
         """
         sales_df = self._execute_query_to_df(sales_sql)
         
+        # 🧠 Step 3: Call parsing pipeline for analytical summary generation
         synthesis_prompt = ChatPromptTemplate.from_messages([
             ("system", """You are a Local Enterprise Marketing Analyst operating inside a Python microservice framework.
 Your job is to read the raw local SQLite database matrix, calculated correlations, and detected operational anomalies, then build a scannable executive summary report.
@@ -144,10 +147,26 @@ Executive Summary Layout Structure:
         
         synthesis_chain = synthesis_prompt | self.llm | StrOutputParser()
         
-        return synthesis_chain.invoke({
+        report_output = synthesis_chain.invoke({
             "query": client_query,
             "sales_data": sales_df.to_markdown(index=False),
             "correlation_data": str(correlation_results["data"]),
             "r_value": correlation_results["r_value"],
             "anomaly_data": "\n".join(anomalies) if anomalies else "None detected."
         })
+
+        # ⚡ Step 4: PROGRAMMATIC SEPARATE AUTOMATED EMAIL TRIGGERS
+        if is_q1:
+            subject = "📊 Q1 Executive Operations Audit - 2025 Sales Trends"
+            email_status = self.send_email_tool(body_text=report_output, subject=subject)
+            report_output += f"\n\n⚙️ **Automated Pipeline Action:**\n{email_status}"
+        elif is_q2:
+            subject = "⚠️ Q2 Executive Operations Audit - Product Quality Log"
+            email_status = self.send_email_tool(body_text=report_output, subject=subject)
+            report_output += f"\n\n⚙️ **Automated Pipeline Action:**\n{email_status}"
+        elif is_q3:
+            subject = "📈 Q3 Executive Operations Audit - Channel Correlation Run"
+            email_status = self.send_email_tool(body_text=report_output, subject=subject)
+            report_output += f"\n\n⚙️ **Automated Pipeline Action:**\n{email_status}"
+            
+        return report_output
