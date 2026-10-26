@@ -11,21 +11,27 @@ st.title("✉️ Email Campaign Automation Hub (Production Architecture)")
 # ------------------------------------------------------------------
 # 1. STREAMLIT SECRETS INGESTION LAYER
 # ------------------------------------------------------------------
-# Automatically pull credentials from .streamlit/secrets.toml and link to environment
 if "GROQ_API_KEY" in st.secrets:
     os.environ["GROQ_API_KEY"] = st.secrets["GROQ_API_KEY"]
 else:
-    st.error("❌ `GROQ_API_KEY` missing from Streamlit Secrets! Please populate your `.streamlit/secrets.toml` configuration file.")
+    st.error("❌ `GROQ_API_KEY` missing from Streamlit Secrets! Please populate your web app configuration settings.")
     st.stop()
 
 # ------------------------------------------------------------------
-# 2. LOCAL FILE SYSTEM & STORAGE VALIDATIONS
+# 2. AUTOMATED WEB PROVISIONING (Replaces terminal setup.py run)
 # ------------------------------------------------------------------
 DB_PATH = os.path.join("data", "mock_data.db")
 
 if not os.path.exists(DB_PATH):
-    st.error("🚨 Relational Data Storage Layer Offline. Run `python setup.py` to compile structural components.")
-    st.stop()
+    st.info("📦 First-time Web Server initialization detected. Compiling database partitions...")
+    try:
+        # Import the provisioning logic from your repository setup file dynamically
+        from setup import provision_enterprise_workspace
+        provision_enterprise_workspace()
+        st.success("✨ Local data layout successfully provisioned on web instance!")
+    except Exception as setup_err:
+        st.error(f"Failed to auto-provision data storage layer: {setup_err}")
+        st.stop()
 
 # ------------------------------------------------------------------
 # 3. LIVE SYSTEM TELEMETRY SIDEBAR HANDLER
@@ -35,12 +41,11 @@ with st.sidebar:
     st.markdown("### 📊 Enterprise DB Telemetry")
     for table in ["sales", "products", "marketing_campaign_metrics", "social_media", "support_cases"]:
         try:
-            # Query table row configuration using position index [0] to match scalar extraction properties
             count_df = pd.read_sql_query(f"SELECT COUNT(*) as cnt FROM {table}", conn)
             count = count_df.iloc[0]['cnt']
-            st.caption(f"💾 **{table}**: {count} Verified Rows in production partition.")
+            st.caption(f"💾 **{table}**: {count} Verified Rows in web partition.")
         except Exception:
-            st.caption(f"⚠️ **{table}**: Schema unreadable or parsing partition locked.")
+            st.caption(f"⚠️ **{table}**: Schema partition locked or loading.")
 conn.close()
 
 # ------------------------------------------------------------------
@@ -49,9 +54,8 @@ conn.close()
 engine = EnterpriseCoWorkEngine(db_path=DB_PATH)
 
 st.markdown("Select an onboarded enterprise quick-prompt to launch analysis:")
-user_query = st.chat_input("Query local decoupled workspace files...")
+user_query = st.chat_input("Query web workspace files...")
 
-# Fast-execution control matrix mapping configuration array values safely
 layout_cols = st.columns(3)
 if layout_cols.button("📋 Q1: Trend Analysis"):
     user_query = STARTER_QUESTIONS[0]
@@ -72,7 +76,6 @@ if user_query:
                 response_text = engine.execute_analytical_query(user_query)
                 st.markdown(response_text)
                 
-            # AUTO-VISUALIZATION ENGINE INTERCEPTOR
             if any(word in user_query.lower() for word in ["trend", "sales", "grow", "correlate"]):
                 st.info("📊 Local Visualization Handler Triggered:")
                 conn = sqlite3.connect(DB_PATH)
