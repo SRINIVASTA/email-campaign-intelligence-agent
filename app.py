@@ -5,43 +5,53 @@ import os
 from engine.agent import EnterpriseCoWorkEngine
 from config.semantic_layer import STARTER_QUESTIONS
 
-st.set_page_config(page_title="Enterprise CoWork Workspace", layout="wide")
-st.title("⚡ Enterprise CoWork Agent (Production Architecture)")
+st.set_page_config(page_title="Email Campaign Agent Workspace", layout="wide")
+st.title("✉️ Email Campaign Automation Hub (Production Architecture)")
 
-# Path validations matching setup requirements
+# ------------------------------------------------------------------
+# 1. STREAMLIT SECRETS INGESTION LAYER
+# ------------------------------------------------------------------
+# Automatically pull credentials from .streamlit/secrets.toml and link to environment
+if "GROQ_API_KEY" in st.secrets:
+    os.environ["GROQ_API_KEY"] = st.secrets["GROQ_API_KEY"]
+else:
+    st.error("❌ `GROQ_API_KEY` missing from Streamlit Secrets! Please populate your `.streamlit/secrets.toml` configuration file.")
+    st.stop()
+
+# ------------------------------------------------------------------
+# 2. LOCAL FILE SYSTEM & STORAGE VALIDATIONS
+# ------------------------------------------------------------------
 DB_PATH = os.path.join("data", "mock_data.db")
 
 if not os.path.exists(DB_PATH):
     st.error("🚨 Relational Data Storage Layer Offline. Run `python setup.py` to compile structural components.")
     st.stop()
 
-# Secret verification for api connections
-if "GROQ_API_KEY" not in os.environ:
-    user_token = st.sidebar.text_input("🔑 Provide your Groq Developer API Key:", type="password")
-    if user_token:
-        os.environ["GROQ_API_KEY"] = user_token
-    else:
-        st.info("💡 Input your Groq API key in the sidebar layout wrapper to initiate communication channels.")
-        st.stop()
-
 # ------------------------------------------------------------------
-# SYSTEM TELEMETRY SIDEBAR HANDLER
+# 3. LIVE SYSTEM TELEMETRY SIDEBAR HANDLER
 # ------------------------------------------------------------------
 conn = sqlite3.connect(DB_PATH)
 with st.sidebar:
     st.markdown("### 📊 Enterprise DB Telemetry")
     for table in ["sales", "products", "marketing_campaign_metrics", "social_media", "support_cases"]:
-        count = pd.read_sql_query(f"SELECT COUNT(*) as cnt FROM {table}", conn).iloc[0]['cnt']
-        st.caption(f"💾 **{table}**: {count} Verified Rows in production partition.")
+        try:
+            # Query table row configuration using position index [0] to match scalar extraction properties
+            count_df = pd.read_sql_query(f"SELECT COUNT(*) as cnt FROM {table}", conn)
+            count = count_df.iloc[0]['cnt']
+            st.caption(f"💾 **{table}**: {count} Verified Rows in production partition.")
+        except Exception:
+            st.caption(f"⚠️ **{table}**: Schema unreadable or parsing partition locked.")
 conn.close()
 
-# Instantiate core execution engine from decoupled application layer
+# ------------------------------------------------------------------
+# 4. INSTANTIATE CORE DECOUPLED ENGINE INTERFACE
+# ------------------------------------------------------------------
 engine = EnterpriseCoWorkEngine(db_path=DB_PATH)
 
 st.markdown("Select an onboarded enterprise quick-prompt to launch analysis:")
 user_query = st.chat_input("Query local decoupled workspace files...")
 
-# Fast-execution control matrix mapping configuration array values
+# Fast-execution control matrix mapping configuration array values safely
 layout_cols = st.columns(3)
 if layout_cols.button("📋 Q1: Trend Analysis"):
     user_query = STARTER_QUESTIONS[0]
@@ -50,6 +60,9 @@ if layout_cols.button("⚠️ Q2: Jacket Flaw Auditing"):
 if layout_cols.button("📈 Q3: Growth Correlation Run"):
     user_query = STARTER_QUESTIONS[2]
 
+# ------------------------------------------------------------------
+# 5. CORE EXECUTION AND LIVE VISUALIZATION INTERCEPTOR
+# ------------------------------------------------------------------
 if user_query:
     st.chat_message("user").markdown(user_query)
     
