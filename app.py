@@ -8,12 +8,18 @@ from config.semantic_layer import STARTER_QUESTIONS
 st.set_page_config(page_title="Email Campaign Agent Workspace", layout="wide")
 st.title("✉️ Email Campaign Automation Hub (Production Architecture)")
 
+# ------------------------------------------------------------------
+# 1. STREAMLIT SECRETS INGESTION LAYER
+# ------------------------------------------------------------------
 if "GROQ_API_KEY" in st.secrets:
     os.environ["GROQ_API_KEY"] = st.secrets["GROQ_API_KEY"]
 else:
     st.error("❌ `GROQ_API_KEY` missing from Streamlit Secrets! Please populate your web app configuration settings.")
     st.stop()
 
+# ------------------------------------------------------------------
+# 2. AUTOMATED WEB PROVISIONING
+# ------------------------------------------------------------------
 DB_PATH = os.path.join("data", "mock_data.db")
 
 if not os.path.exists(DB_PATH):
@@ -27,17 +33,15 @@ if not os.path.exists(DB_PATH):
         st.stop()
 
 # ------------------------------------------------------------------
-# 3. LIVE SYSTEM TELEMETRY SIDEBAR HANDLER (Aligned to Snowflake Schemas)
+# 3. LIVE SYSTEM TELEMETRY SIDEBAR HANDLER
 # ------------------------------------------------------------------
 conn = sqlite3.connect(DB_PATH)
 with st.sidebar:
     st.markdown("### 📊 Enterprise DB Telemetry")
-    # Matches the exact production components loaded in the Snowflake deployment files
     target_tables = ["sales", "products", "marketing_campaign_metrics", "social_media", "support_cases"]
     for table in target_tables:
         try:
             count_df = pd.read_sql_query(f"SELECT COUNT(*) as cnt FROM {table}", conn)
-            # Safe row extraction using string-named column index target placement
             count = count_df.at[0, 'cnt']
             st.caption(f"💾 **{table}**: {count} Verified Rows in web partition.")
         except Exception as e:
@@ -51,13 +55,15 @@ engine = EnterpriseCoWorkEngine(db_path=DB_PATH)
 
 st.markdown("Select an onboarded enterprise quick-prompt to launch analysis:")
 selected_query = None
+
+# ⚡ FIXED LAYOUT: Assigning columns and indexing them to attach buttons correctly
 layout_cols = st.columns(3)
 
-if layout_cols.button("📋 Q1: Trend Analysis", use_container_width=True):
+if layout_cols[0].button("📋 Q1: Trend Analysis", use_container_width=True):
     selected_query = STARTER_QUESTIONS[0]
-if layout_cols.button("⚠️ Q2: Jacket Flaw Auditing", use_container_width=True):
+if layout_cols[1].button("⚠️ Q2: Feedback Auditing", use_container_width=True):
     selected_query = STARTER_QUESTIONS[1]
-if layout_cols.button("📈 Q3: Growth Correlation Run", use_container_width=True):
+if layout_cols[2].button("📈 Q3: Growth Correlation Run", use_container_width=True):
     selected_query = STARTER_QUESTIONS[2]
 
 input_query = st.chat_input("Query web workspace files...")
