@@ -15,7 +15,7 @@ Relationships:
 """
 
 STARTER_QUESTIONS = [
-    "Show me the trend of sales by product category between June 2025 and August 2025",
-    "What checkout errors or issues did subscribers report regarding our recent email campaigns?",
-    "Why did the Midsummer Flash Sale generate a high conversion spike? Correlate email clicks with attributed revenue metrics."
+    "Show me the trend of sales by product category across all four quarters of 2025",
+    "What issues are reported with jackets recently in customer support tickets?",
+    "Why did sales of Fitness Wear grow so much in July? Correlate email clicks with social media metrics."
 ]
