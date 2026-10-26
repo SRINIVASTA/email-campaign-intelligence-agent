@@ -16,8 +16,6 @@ class EnterpriseCoWorkEngine:
             raise FileNotFoundError(f"Database target missing at path context: {db_path}")
             
         self.db_path = db_path
-        
-        # Upgraded to active model replacement string
         self.llm = ChatGroq(
             model="openai/gpt-oss-120b", 
             temperature=0
@@ -32,8 +30,8 @@ class EnterpriseCoWorkEngine:
         finally:
             conn.close()
 
-    def send_email_tool(self, body_text: str, recipient_email: str = None, subject: str = "Snowflake CoWork Local Agent Audit") -> str:
-        """Dispatches HTML alerts via SMTP layer client."""
+    def send_email_tool(self, body_text: str, recipient_email: str = None, subject: str = "Local Engine Agent Operations Audit") -> str:
+        """Dispatches HTML alerts via standard SMTP layer client."""
         smtp_user = os.environ.get("SMTP_USER")
         smtp_pass = os.environ.get("SMTP_PASSWORD")
         smtp_server = os.environ.get("SMTP_SERVER", "://gmail.com")
@@ -64,10 +62,7 @@ class EnterpriseCoWorkEngine:
             return f"❌ Custom tool failed: {smtp_err}"
 
     def calculate_growth_correlation(self) -> dict:
-        """
-        Calculates the mathematical Pearson correlation (R) between 
-        Marketing Clicks and Social Media Mentions for Fitness Wear.
-        """
+        """Calculates mathematical Pearson correlation (R) on local table structures."""
         sql = """
             SELECT 
                 strftime('%m', m.date) as month,
@@ -83,7 +78,7 @@ class EnterpriseCoWorkEngine:
         if len(df) > 1:
             correlation = df['total_clicks'].corr(df['total_mentions'])
         else:
-            correlation = 1.0 # High overlap baseline flag
+            correlation = 1.0 
             
         return {
             "data": df.to_dict(orient="records"),
@@ -91,36 +86,30 @@ class EnterpriseCoWorkEngine:
         }
 
     def detect_critical_anomalies(self) -> list:
-        """Scans support transcripts to catch structural manufacturing defects and coupon failures."""
+        """Scans support transcripts locally to catch manufacturing defects and system failures."""
         sql = "SELECT id, title, product, transcript, date FROM support_cases"
         df = self._execute_query_to_df(sql)
         
         anomalies = []
         for _, row in df.iterrows():
             text = row['transcript'].lower()
-            # Catch severe quality risks
             if "tear" in text or "broken" in text or "defect" in text:
                 anomalies.append(f"🚨 CRITICAL MANUFACTURING DEFECT found in {row['product']} ({row['id']}): '{row['transcript']}'")
-            # Catch runtime checkout bottlenecks
             elif "error" in text or "fail" in text:
-                anomalies.append(f"⚠️ SYSTEM RUNTIME BOTTLENECK detected on {row['date']} ({row['id']}): '{row['transcript']}'")
+                anomalies.append(f"⚠️ LOCAL SERVER RUNTIME BOTTLENECK detected on {row['date']} ({row['id']}): '{row['transcript']}'")
                 
         return anomalies
 
     def execute_analytical_query(self, client_query: str) -> str:
-        """Intercepts prompts to run direct algorithmic calculations alongside the LLM."""
-        
-        # 1. Handle Email Dispatch Commands
+        """Intercepts prompts to run direct local calculations alongside the processing layer."""
         if any(word in client_query.lower() for word in ["email", "send a summary"]):
             data_context = self.execute_analytical_query("Show me the trend of sales by product category across all four quarters of 2025")
-            email_status = self.send_email_tool(body_text=data_context, subject="Snowflake CoWork - Sales Analytics Audit")
+            email_status = self.send_email_tool(body_text=data_context, subject="Local Analytics System Report")
             return f"{data_context}\n\n⚙️ **Tool Execution Status:**\n{email_status}"
 
-        # 2. Extract Data via Programmatic Mappings
         anomalies = self.detect_critical_anomalies()
         correlation_results = self.calculate_growth_correlation()
         
-        # Pull raw quarterly sales ledger directly using native SQLite string formatting
         sales_sql = """
             SELECT 
                 p.category,
@@ -133,10 +122,9 @@ class EnterpriseCoWorkEngine:
         """
         sales_df = self._execute_query_to_df(sales_sql)
         
-        # 3. Use LLM safely strictly for Synthesis and Reporting
         synthesis_prompt = ChatPromptTemplate.from_messages([
-            ("system", """You are an Enterprise AI Marketing Analyst operating inside a Snowflake CoWork framework.
-Your job is to read the raw database matrix, calculated correlations, and detected anomalies, then build a scannable executive summary report.
+            ("system", """You are a Local Enterprise Marketing Analyst operating inside a Python microservice framework.
+Your job is to read the raw local SQLite database matrix, calculated correlations, and detected operational anomalies, then build a scannable executive summary report.
 Highlight calculated values accurately without changing them. Ensure clear bold text styling for entities."""),
             ("user", """
 Query Request: {query}
