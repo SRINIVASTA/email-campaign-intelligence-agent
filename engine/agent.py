@@ -12,18 +12,19 @@ class EnterpriseCoWorkEngine:
         # Bind connection to local repository file footprint
         self.db = SQLDatabase.from_uri(f"sqlite:///{db_path}")
         
-        # ⚡ OPENAI OPEN-WEIGHT PRODUCTION LAYER:
-        # Initialized with 'openai/gpt-oss-120b' hosted natively on Groq.
-        # This leverages 120B parameter reasoning depth for structured SQL extraction blocks.
+        # Initialize open-weights reasoning framework
         self.llm = ChatGroq(
             model="openai/gpt-oss-120b", 
             temperature=0
         )
         
-        # Compile agent logic architecture executor 
+        # ⚡ PRODUCTION FIX: Force 'openai-tools' alternative agent type
+        # Setting agent_type="zero-shot-react-description" changes interaction protocols 
+        # from tool-calling tokens to plain-text ReAct loops compatible with gpt-oss models.
         self.agent_executor = create_sql_agent(
             self.llm, 
             db=self.db, 
+            agent_type="zero-shot-react-description",
             verbose=True, 
             handle_parsing_errors=True
         )
