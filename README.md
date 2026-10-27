@@ -1,6 +1,6 @@
 # ✉️ Local Email Campaign & Marketing Intelligence Agent
 
-A decoupled, local analytics microservice architecture that parses enterprise sales, marketing campaign metrics, social media buzz, and customer support data. The system combines local algorithmic execution (Pandas matrix math & keyword text scanning) with structured LLM synthesis to deliver automated executive email reports.
+A decoupled, local analytics microservice architecture that parses enterprise sales, marketing campaign metrics, social media buzz, and customer support data. The system combines local algorithmic execution (Pandas matrix math & keyword text scanning) with automated list hygiene loops and structured LLM synthesis to deliver high-visual responsive HTML email reports.
 
 All components are dynamically aligned with the project's data schema requirements, enforcing strict uppercase data dimensions and utilizing local SQLite processing layers.
 
@@ -8,7 +8,7 @@ All components are dynamically aligned with the project's data schema requiremen
 
 ## 📊 System Architecture & Process Flow
 
-The system separates raw database querying and heavy mathematical calculations from text synthesis, ensuring zero SQL-injection vulnerabilities and stable runtime execution.
+The system separates raw database querying and heavy mathematical calculations from text synthesis, ensuring zero SQL-injection vulnerabilities, sandboxed HTML frontend rendering, and stable runtime execution.
 
 ### 1. Data Ingestion & System Interaction Funnel
 ```mermaid
@@ -24,18 +24,19 @@ graph TD
     subgraph Analytical Processing
         Pandas -->|Pearson R Calculation| Calc[Marketing Channel Correlation]
         Pandas -->|Text Keyword Scan| Anom[Support Case Anomaly Detector]
+        Pandas -->|List Cleanse Sweep| Hygiene[Automated Subscriber Hygiene Engine]
     end
 
     subgraph Report Synthesis & Automation
-        Calc & Anom -->|Context Matrices| LLM[Groq: openai/gpt-oss-20b]
+        Calc & Anom & Hygiene -->|Context Matrices| LLM[Groq Layer Engine]
         LLM -->|Formatted Executive Summary| Orchestrator{Query Classifier}
-        Orchestrator -->|Append UI Log| Streamlit
-        Orchestrator -->|Auto-Email Tool Trigger| SMTP[Local SMTP / Gmail Gateway]
+        Orchestrator -->|Rich HTML Sandboxed Preview| Streamlit
+        Orchestrator -->|Forced Port 465 SSL Trigger| SMTP[Secure Outbound Gmail Gateway]
     end
 ```
 
 ### 2. Database Schema Mappings
-Enforced across the application to ensure flawless joins and cross-channel calculation lookups:
+Enforced across the application to ensure flawless joins, cross-channel calculation lookups, and subscriber telemetry delivery tracking:
 
 ```mermaid
 erDiagram
@@ -72,9 +73,25 @@ erDiagram
         TEXT transcript
         TEXT date
     }
+    subscribers {
+        INTEGER SUBSCRIBER_ID PK
+        TEXT EMAIL
+        TEXT FIRST_NAME
+        TEXT JOIN_DATE
+        TEXT STATUS
+    }
+    email_event_logs {
+        INTEGER EVENT_ID PK
+        TEXT TIMESTAMP
+        TEXT CAMPAIGN_NAME
+        INTEGER SUBSCRIBER_ID FK
+        TEXT EVENT_TYPE
+        TEXT LINK_URL
+    }
 
     sales }o--|| products : "joins via PRODUCT_ID"
     social_media }o--|| marketing_campaign_metrics : "correlates via CATEGORY"
+    email_event_logs }o--|| subscribers : "tracks via SUBSCRIBER_ID"
 ```
 
 ---
@@ -91,25 +108,29 @@ cd email-campaign-intelligence-agent
 pip install -r requirements.txt
 ```
 
-### 2. Configure Local Environment Variables
-Create a hidden environment profile configuration file named **`.env`** directly inside the project root folder:
+### 2. Configure Streamlit Secrets Configuration Mappings
+Create a local secrets project initialization profile configuration file named **`.streamlit/secrets.toml`** directly inside the project root folder:
 ```bash
-touch .env
+mkdir .streamlit
+touch .streamlit/secrets.toml
 ```
-Open the `.env` file and populate it with your active processing parameters:
-```env
+Open the `secrets.toml` file and populate it with your active processing parameters:
+```toml
 # 🔑 Groq Processing Layer Engine Keys
-GROQ_API_KEY=gsk_your_actual_groq_api_token_here
+GROQ_API_KEY = "gsk_your_actual_groq_api_token_here"
 
-# ✉️ Local Machine Email Server Routing (Gmail Example)
-SMTP_SERVER=://gmail.com
-SMTP_PORT=587
-SMTP_USER=your_corporate_email@gmail.com
-SMTP_PASSWORD=your_16_character_app_password
+# ✉️ Secure Outbound Mail Gateway Routing Parameters
+SMTP_SERVER = "://gmail.com"
+SMTP_PORT = 465
+SMTP_USER = "your_authenticated_corporate_email@gmail.com"
+SMTP_PASSWORD = "your_16_character_google_app_password"
+
+# 📬 Target Report Inbox Destination Mappings
+REPORT_RECIPIENT = "your_personal_receiving_mailbox@domain.com"
 ```
 
 ### 3. Initialize & Seed Database Footprint
-Run the setup pipeline to compile directories, construct the uppercase database layout schemas, and seed live row metrics across the 4 fiscal quarters:
+Run the setup pipeline to compile directories, construct the upgraded uppercase database layout schemas, and seed live row metrics across the 4 fiscal quarters:
 ```bash
 python setup.py
 ```
@@ -124,15 +145,16 @@ streamlit run app.py
 
 ## ⚙️ Core Application Interface Workflows
 
-The application dashboard provides three pre-onboarded automated quick-prompt tasks:
+The application dashboard provides four pre-onboarded automated quick-prompt tasks:
 
 *   **📋 Q1: Trend Analysis (Sales Audit):** Compiles the full annual transactional history matrix across all product categories. Automatically sends out a summary report titled `📊 Q1 Executive Operations Audit - 2025 Sales Trends`.
 *   **⚠️ Q2: Feedback Auditing (Jacket Quality Risk):** Scans customer support logs for structural defects. Programmatically isolates critical anomalies (such as the *Thermal Expedition Parka* armpit seam tearing failures) and sends out an alert titled `⚠️ Q2 Executive Operations Audit - Product Quality Log`.
 *   **📈 Q3: Growth Correlation Run (Marketing RPC):** Performs a Pearson Product-Moment Correlation calculation ($R = 0.9652$) between email click logs and active social media impressions. Delivers a report titled `📈 Q3 Executive Operations Audit - Channel Correlation Run`.
+*   **🛡️ Q4: Subscriber Hygiene (Deliverability Matrix):** Evaluates campaign open-to-bounce boundaries. It computes live delivery telemetry logs, **automatically switches hard-bounced or opted-out email row records to inactive status metrics**, and dispatches a rich-text HTML advisory report titled `📋 Q4 Executive Operations Audit - Subscriber Health`.
 
 ---
 
-## 🛠️ Offline Offline Testing & Debugging (Mock SMTP)
+## 🛠️ Offline Testing & Debugging (Mock SMTP)
 
 If you are running the system without an active internet gateway or DNS connection to live external mail relays, you can bypass network timeouts (`[Errno -2] Name or service not known`) by spinning up a local Python diagnostic mail interceptor loop:
 
@@ -140,11 +162,11 @@ If you are running the system without an active internet gateway or DNS connecti
    ```bash
    python -m smtpd -c DebuggingServer -n localhost:1025
    ```
-2. Update your `.env` configuration keys to intercept metrics locally:
-   ```env
-   SMTP_SERVER=localhost
-   SMTP_PORT=1025
-   SMTP_USER=test@local.me
-   SMTP_PASSWORD=bypass_token
+2. Update your `.streamlit/secrets.toml` configuration keys to intercept metrics locally:
+   ```toml
+   SMTP_SERVER = "localhost"
+   SMTP_PORT = 1025
+   SMTP_USER = "test@local.me"
+   SMTP_PASSWORD = "bypass_token"
    ```
 Your analytical engine reports will now instantly print safely into your background terminal window without network delays.
