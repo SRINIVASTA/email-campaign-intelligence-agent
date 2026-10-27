@@ -223,16 +223,60 @@ class EnterpriseCoWorkEngine:
                 return html_report
             
             import streamlit as st
-            # Pull the destination mail directly out of your dashboard secrets panel
-            target_inbox = st.secrets.get("REPORT_RECIPIPIENT", st.secrets.get("SMTP_USER"))
+            target_inbox = st.secrets.get("REPORT_RECIPIENT", st.secrets.get("SMTP_USER"))
             
+            # Algorithmic Data Extraction Layer to avoid Google HTML spam blocks
+            event_query = "SELECT timestamp, campaign_name, event_type FROM email_event_logs;"
+            df_events = self._execute_query_to_df(event_query)
+            
+            total_sent = len(df_events[df_events['event_type'] == 'SENT'])
+            bounces = len(df_events[df_events['event_type'] == 'BOUNCE'])
+            unsubscribes = len(df_events[df_events['event_type'] == 'UNSUBSCRIBE'])
+            opens = len(df_events[df_events['event_type'] == 'OPEN'])
+            
+            bounce_rate = (bounces / total_sent) * 100 if total_sent > 0 else 0.0
+            open_rate = (opens / total_sent) * 100 if total_sent > 0 else 0.0
+            
+            campaign_summary = df_events.groupby(['campaign_name', 'event_type']).size().unstack(fill_value=0).reset_index()
+            campaign_summary.columns = [col.upper() for col in campaign_summary.columns]
+            
+            # Build an anti-phishing plain text framework payload
+            text_email_body = f"""
+===================================================
+📋 SYSTEM DELIVERABILITY & HYGIENE AUDIT REPORT
+===================================================
+Generated via Local Intelligence Pipeline Engine
+Execution Timestamp: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+
+[CORE TELEMETRY TARGET KPIs]
+- Avg Open Ratio: {open_rate:.1f}%
+- System Bounce Rate: {bounce_rate:.2f}%
+- Total Opt-Outs: {unsubscribes}
+
+---------------------------------------------------
+⚠️ STATUS ALERT TRACKER
+---------------------------------------------------
+{'CRITICAL INFRASTRUCTURE ALARM: Bounce rate limits exceeded 5.0% threshold boundary metrics.' if bounce_rate > 5.0 else 'System health processing bounds running within safe historical levels.'}
+
+---------------------------------------------------
+📊 GRANULAR CAMPAIGN PERFORMANCE MATRIX
+---------------------------------------------------
+{campaign_summary.to_string(index=False)}
+
+---------------------------------------------------
+Confidential Internal Operations Log.
+===================================================
+            """
+            
+            # Dispatch the email as clean, secure text instead of rich HTML
             email_status = self.send_email_tool(
-                body_text=html_report, 
+                body_text=text_email_body, 
                 recipient_email=target_inbox,
-                subject="📋 Q4 Executive Operations Audit - Subscriber Health", 
-                is_html=True
+                subject="📊 Q4 Operational Audit Report - Plain Text Sync", 
+                is_html=False  # 👈 Crucial: Swapped to False to force secure text rendering
             )
-            return f"### 📊 Automated Workflow: Q4 Subscriber Deliverability Report Run\n\nYour HTML report has been generated successfully and written to local microservice system storage components (`pages/subscriber_health_report.html`).\n\n⚙️ **Automated Pipeline Delivery Action:**\n{email_status}"
+            
+            return f"### 📊 Automated Workflow: Q4 Subscriber Deliverability Report Run\n\nYour visual dashboard HTML asset remains generated locally inside your container file log (`pages/subscriber_health_report.html`).\n\n⚙️ **Automated Pipeline Delivery Action:**\n{email_status}"
 
         is_q1 = "four quarters" in client_query.lower() or "q1" in client_query.lower()
         is_q2 = "jackets recently" in client_query.lower() or "q2" in client_query.lower()
