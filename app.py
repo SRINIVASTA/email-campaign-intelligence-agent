@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import sqlite3
 import os
+import time
 import streamlit.components.v1 as components
 from engine.agent import EnterpriseCoWorkEngine
 from config.semantic_layer import STARTER_QUESTIONS
@@ -65,7 +66,7 @@ engine = EnterpriseCoWorkEngine(db_path=DB_PATH)
 st.markdown("Select an onboarded enterprise quick-prompt to launch analysis:")
 selected_query = None
 
-# ⚡ BALANCED DESIGN MATRIX: Splitting layout into 4 unified component pathways
+# ⚡ BALANCED DESIGN MATRIX: Splitting layout into 4 unified pathways
 layout_cols = st.columns(4)
 
 if layout_cols[0].button("📋 Q1: Trend Analysis", use_container_width=True):
@@ -75,7 +76,8 @@ if layout_cols[1].button("⚠️ Q2: Feedback Auditing", use_container_width=Tru
 if layout_cols[2].button("📈 Q3: Growth Correlation Run", use_container_width=True):
     selected_query = STARTER_QUESTIONS[2]
 if layout_cols[3].button("🛡️ Q4: Subscriber Hygiene", use_container_width=True):
-    selected_query = "Run the high-visual Q4 Subscriber Health and bounce rate deliverability matrix analysis."
+    # 🔄 CACHE BUSTER: Append a live timestamp so Streamlit can never freeze the execution loop
+    selected_query = f"Run the high-visual Q4 Subscriber Health and bounce rate deliverability matrix analysis. ts_{int(time.time())}"
 
 input_query = st.chat_input("Query web workspace files...")
 user_query = input_query if input_query else selected_query
@@ -92,12 +94,14 @@ if user_query:
                 response_text = engine.execute_analytical_query(user_query)
                 
             # ✅ ADAPTIVE CONDITIONAL INTERCEPTOR RENDERER
-            if "<!DOCTYPE html>" in response_text:
-                st.success("📊 Rich-Text Visual Audit Report Rendered Below:")
-                # Safely parse embedded CSS style matrix layout options inside sandboxed sandbox framework
-                components.html(response_text, height=650, scrolling=True)
+            if "<!DOCTYPE html>" in response_text or "📋 SYSTEM DELIVERABILITY" in response_text:
+                if "<!DOCTYPE html>" in response_text:
+                    st.success("📊 Rich-Text Visual Audit Report Rendered Below:")
+                    components.html(response_text, height=650, scrolling=True)
+                else:
+                    st.success("📊 Text Audit Report Rendered Below:")
+                    st.text(response_text)
             else:
-                # Default back to standard Markdown rendering for classical analytical outputs
                 st.markdown(response_text)
                 
             # Trigger visualization logs if standard transactional keywords are targeted
