@@ -32,17 +32,24 @@ class EnterpriseCoWorkEngine:
             conn.close()
 
     def send_email_tool(self, body_text: str, recipient_email: str = None, subject: str = "Local Engine Agent Operations Audit", is_html: bool = False) -> str:
-        """Dispatches text or styled HTML alerts via standard SMTP layer client using local machine environment settings."""
-        smtp_user = os.environ.get("SMTP_USER")
-        smtp_pass = os.environ.get("SMTP_PASSWORD")
-        smtp_server = os.environ.get("SMTP_SERVER", "://gmail.com")
-        smtp_port = int(os.environ.get("SMTP_PORT", 587))
+        """Dispatches text or styled HTML alerts via standard SMTP layer client pulling directly from Streamlit Secrets."""
+        import streamlit as st
+        
+        # 1. Fall back gracefully between Streamlit Secrets and local Env mappings
+        smtp_user = st.secrets.get("SMTP_USER", os.environ.get("SMTP_USER"))
+        smtp_pass = st.secrets.get("SMTP_PASSWORD", os.environ.get("SMTP_PASSWORD"))
+        smtp_server = st.secrets.get("SMTP_SERVER", os.environ.get("SMTP_SERVER", "://gmail.com"))
+        
+        try:
+            smtp_port = int(st.secrets.get("SMTP_PORT", os.environ.get("SMTP_PORT", 587)))
+        except (ValueError, TypeError):
+            smtp_port = 587
         
         if not recipient_email:
             recipient_email = smtp_user
             
         if not smtp_user or not smtp_pass:
-            return "⚠️ Custom Tool Alert: SMTP credentials missing in local environment settings."
+            return "⚠️ Custom Tool Alert: SMTP credentials missing in Streamlit Secrets configuration mappings."
 
         try:
             msg = MIMEMultipart()
@@ -56,15 +63,16 @@ class EnterpriseCoWorkEngine:
                 html_body = body_text.replace("\n", "<br>").replace("**", "<b>").replace("*", "<i>")
                 msg.attach(MIMEText(html_body, 'html'))
             
+            # 2. Establish Secure TLS Handshake Exchange
             server = smtplib.SMTP(smtp_server, smtp_port)
             server.starttls()
             server.login(smtp_user, smtp_pass)
             server.sendmail(smtp_user, recipient_email, msg.as_string())
             server.quit()
             
-            return f"✅ Dispatch complete! Report successfully sent to {recipient_email}."
+            return f"✅ Dispatch complete! Rich report successfully sent to {recipient_email}."
         except Exception as smtp_err:
-            return f"❌ Custom tool failed: {smtp_err}"
+            return f"❌ Custom tool connection failed: {smtp_err}"
     def calculate_growth_correlation(self) -> dict:
         """Calculates mathematical Pearson correlation (R) on local table structures."""
         sql = """
