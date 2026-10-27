@@ -216,11 +216,19 @@ class EnterpriseCoWorkEngine:
     def execute_analytical_query(self, client_query: str) -> str:
         """Programmatically intercepts specific quick-prompts to deliver data matching the exact scope."""
         
+        # Intercept call if it targets subscriber health audit channels
         if any(word in client_query.lower() for word in ["subscriber", "health", "bounce", "unsub", "q4"]):
             html_report = self.run_subscriber_health_audit()
             if "⚠️" in html_report:
                 return html_report
-            email_status = self.send_email_tool(body_text=html_report, subject="📋 Q4 Executive Operations Audit - Subscriber Health", is_html=True)
+            
+            #  FIXED PIPELINE TRIGGER: Sending to an alternative external mailbox
+            email_status = self.send_email_tool(
+                body_text=html_report, 
+                recipient_email="tasrinivass@gmail.com",  # 👈 Replace with your actual alternative email address!
+                subject="📋 Q4 Executive Operations Audit - Subscriber Health", 
+                is_html=True
+            )
             return f"### 📊 Automated Workflow: Q4 Subscriber Deliverability Report Run\n\nYour HTML report has been generated successfully and written to local microservice system storage components (`pages/subscriber_health_report.html`).\n\n⚙️ **Automated Pipeline Delivery Action:**\n{email_status}"
 
         is_q1 = "four quarters" in client_query.lower() or "q1" in client_query.lower()
