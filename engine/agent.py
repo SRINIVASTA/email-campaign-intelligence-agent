@@ -222,10 +222,13 @@ class EnterpriseCoWorkEngine:
             if "⚠️" in html_report:
                 return html_report
             
-            #  FIXED PIPELINE TRIGGER: Sending to an alternative external mailbox
+            import streamlit as st
+            # Pull the destination mail directly out of your dashboard secrets panel
+            target_inbox = st.secrets.get("REPORT_RECIPIPIENT", st.secrets.get("SMTP_USER"))
+            
             email_status = self.send_email_tool(
                 body_text=html_report, 
-                recipient_email="tasrinivass@gmail.com",  # 👈 Replace with your actual alternative email address!
+                recipient_email=target_inbox,
                 subject="📋 Q4 Executive Operations Audit - Subscriber Health", 
                 is_html=True
             )
