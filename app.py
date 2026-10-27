@@ -38,7 +38,15 @@ if not os.path.exists(DB_PATH):
 conn = sqlite3.connect(DB_PATH)
 with st.sidebar:
     st.markdown("### 📊 Enterprise DB Telemetry")
-    target_tables = ["sales", "products", "marketing_campaign_metrics", "social_media", "support_cases"]
+    target_tables = [
+        "sales", 
+        "products", 
+        "marketing_campaign_metrics", 
+        "social_media", 
+        "support_cases",
+        "subscribers",
+        "email_event_logs"
+    ]
     for table in target_tables:
         try:
             count_df = pd.read_sql_query(f"SELECT COUNT(*) as cnt FROM {table}", conn)
@@ -56,8 +64,8 @@ engine = EnterpriseCoWorkEngine(db_path=DB_PATH)
 st.markdown("Select an onboarded enterprise quick-prompt to launch analysis:")
 selected_query = None
 
-# ⚡ FIXED LAYOUT: Assigning columns and indexing them to attach buttons correctly
-layout_cols = st.columns(3)
+# ⚡ BALANCED DESIGN MATRIX: Splitting layout into 4 unified component pathways
+layout_cols = st.columns(4)
 
 if layout_cols[0].button("📋 Q1: Trend Analysis", use_container_width=True):
     selected_query = STARTER_QUESTIONS[0]
@@ -65,6 +73,8 @@ if layout_cols[1].button("⚠️ Q2: Feedback Auditing", use_container_width=Tru
     selected_query = STARTER_QUESTIONS[1]
 if layout_cols[2].button("📈 Q3: Growth Correlation Run", use_container_width=True):
     selected_query = STARTER_QUESTIONS[2]
+if layout_cols[3].button("🛡️ Q4: Subscriber Hygiene", use_container_width=True):
+    selected_query = "Run the high-visual Q4 Subscriber Health and bounce rate deliverability matrix analysis."
 
 input_query = st.chat_input("Query web workspace files...")
 user_query = input_query if input_query else selected_query
@@ -81,7 +91,7 @@ if user_query:
                 response_text = engine.execute_analytical_query(user_query)
                 st.markdown(response_text)
                 
-            # ✅ FIXED: Standardized substring check matches text criteria accurately 
+            # Trigger visualization logs if standard transactional keywords are targeted
             if any(word in user_query.lower() for word in ["trend", "sales", "grow", "correlate", "quarter"]):
                 st.info("📊 Local Visualization Handler Triggered:")
                 conn = sqlite3.connect(DB_PATH)
