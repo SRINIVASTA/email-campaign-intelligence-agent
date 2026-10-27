@@ -129,3 +129,54 @@ def provision_enterprise_workspace():
 
 if __name__ == "__main__":
     provision_enterprise_workspace()
+
+# Insert this directly into your provision_enterprise_workspace() loop in setup.py
+
+    # ==========================================
+    # Table 6: SUBSCRIBERS (Profile Reference)
+    # ==========================================
+    cursor.execute("""
+    CREATE TABLE subscribers (
+        subscriber_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT UNIQUE NOT NULL,
+        first_name TEXT,
+        join_date TEXT,
+        status TEXT DEFAULT 'ACTIVE'
+    )""")
+    
+    # ==========================================
+    # Table 7: EMAIL_EVENT_LOGS (Telemetry Transactional Log)
+    # ==========================================
+    cursor.execute("""
+    CREATE TABLE email_event_logs (
+        event_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        timestamp TEXT NOT NULL,
+        campaign_name TEXT NOT NULL,
+        subscriber_id INTEGER,
+        event_type TEXT NOT NULL,    -- 'SENT', 'OPEN', 'CLICK', 'BOUNCE', 'UNSUBSCRIBE'
+        link_url TEXT,
+        FOREIGN KEY(subscriber_id) REFERENCES subscribers(subscriber_id)
+    )""")
+
+    print("🌱 Seeding campaign subscriber profile telemetry records...")
+    
+    # Seed active profiles
+    cursor.executemany("INSERT INTO subscribers (subscriber_id, email, first_name, join_date, status) VALUES (?,?,?,?,?)", [
+        (1, "corp_exec1@enterprise.com", "Sarah", "2025-01-10", "ACTIVE"),
+        (2, "beta_tester@domain.io", "Alex", "2025-03-12", "ACTIVE"),
+        (3, "stale_user@oldmail.com", "John", "2025-05-14", "BOUNCED"),
+        (4, "opt_out_client@privacy.net", "Elena", "2025-06-20", "UNSUBSCRIBED")
+    ])
+
+    # Seed event logs to instantly test bounce alerts and metrics
+    cursor.executemany("INSERT INTO email_event_logs (timestamp, campaign_name, subscriber_id, event_type, link_url) VALUES (?,?,?,?,?)", [
+        ("2025-11-12 09:00:00", "Winter Alpine Extreme", 1, "SENT", None),
+        ("2025-11-12 09:05:00", "Winter Alpine Extreme", 1, "OPEN", None),
+        ("2025-11-12 09:06:00", "Winter Alpine Extreme", 1, "CLICK", "https://store.com"),
+        ("2025-11-12 09:00:00", "Winter Alpine Extreme", 2, "SENT", None),
+        ("2025-11-12 09:02:00", "Winter Alpine Extreme", 2, "OPEN", None),
+        ("2025-11-12 09:00:00", "Winter Alpine Extreme", 3, "SENT", None),
+        ("2025-11-12 09:00:02", "Winter Alpine Extreme", 3, "BOUNCE", None), # 🚨 System Alert testing point
+        ("2025-11-12 09:00:00", "Winter Alpine Extreme", 4, "SENT", None),
+        ("2025-11-12 09:45:00", "Winter Alpine Extreme", 4, "UNSUBSCRIBE", None)
+    ])
