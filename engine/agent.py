@@ -209,11 +209,13 @@ class EnterpriseCoWorkEngine:
             TABLE_ROWS=table_rows_buffer
         )
         
+        # 6. Automatic File Cache Output Configuration Trace Route
         output_report_path = os.path.join("pages", "subscriber_health_report.html")
         os.makedirs(os.path.dirname(output_report_path), exist_ok=True)
         with open(output_report_path, "w", encoding="utf-8") as f:
             f.write(final_html)
-            return final_html
+            
+        return final_html
 
 
 ### Block 3 of 3: Query Interceptor & Main Analytical Execution Pipeline
