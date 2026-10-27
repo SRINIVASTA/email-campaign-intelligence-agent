@@ -35,15 +35,10 @@ class EnterpriseCoWorkEngine:
         """Dispatches text or styled HTML alerts via standard SMTP layer client pulling directly from Streamlit Secrets."""
         import streamlit as st
         
-        # 1. Fall back gracefully between Streamlit Secrets and local Env mappings
+        # 1. Pull credentials from Streamlit Secrets or Environment Fallbacks
         smtp_user = st.secrets.get("SMTP_USER", os.environ.get("SMTP_USER"))
         smtp_pass = st.secrets.get("SMTP_PASSWORD", os.environ.get("SMTP_PASSWORD"))
-        smtp_server = st.secrets.get("SMTP_SERVER", os.environ.get("SMTP_SERVER", "://gmail.com"))
-        
-        try:
-            smtp_port = int(st.secrets.get("SMTP_PORT", os.environ.get("SMTP_PORT", 587)))
-        except (ValueError, TypeError):
-            smtp_port = 587
+        smtp_server = st.secrets.get("SMTP_SERVER", os.environ.get("SMTP_SERVER", "smtp.gmail.com"))
         
         if not recipient_email:
             recipient_email = smtp_user
@@ -63,14 +58,13 @@ class EnterpriseCoWorkEngine:
                 html_body = body_text.replace("\n", "<br>").replace("**", "<b>").replace("*", "<i>")
                 msg.attach(MIMEText(html_body, 'html'))
             
-            # 2. Establish Secure TLS Handshake Exchange
-            server = smtplib.SMTP(smtp_server, smtp_port)
-            server.starttls()
+            # 🧪 2. FORCED SSL SECURE HANDSHAKE PIPELINE (Bypasses Port 587 local blockages)
+            server = smtplib.SMTP_SSL(smtp_server, 465)
             server.login(smtp_user, smtp_pass)
             server.sendmail(smtp_user, recipient_email, msg.as_string())
             server.quit()
             
-            return f"✅ Dispatch complete! Rich report successfully sent to {recipient_email}."
+            return f"✅ Dispatch complete! Rich report successfully sent via SSL to {recipient_email}."
         except Exception as smtp_err:
             return f"❌ Custom tool connection failed: {smtp_err}"
     def calculate_growth_correlation(self) -> dict:
