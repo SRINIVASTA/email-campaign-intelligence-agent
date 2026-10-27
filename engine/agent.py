@@ -32,13 +32,12 @@ class EnterpriseCoWorkEngine:
             conn.close()
 
     def send_email_tool(self, body_text: str, recipient_email: str = None, subject: str = "Local Engine Agent Operations Audit", is_html: bool = False) -> str:
-        """Dispatches text or styled HTML alerts via standard SMTP layer client pulling directly from Streamlit Secrets."""
+        """Dispatches text or styled HTML alerts via standard SMTP layer client pulling directly from Streamlit Secrets with Debug Hooks."""
         import streamlit as st
         
-        # 1. Pull credentials from Streamlit Secrets or Environment Fallbacks
         smtp_user = st.secrets.get("SMTP_USER", os.environ.get("SMTP_USER"))
         smtp_pass = st.secrets.get("SMTP_PASSWORD", os.environ.get("SMTP_PASSWORD"))
-        smtp_server = st.secrets.get("SMTP_SERVER", os.environ.get("SMTP_SERVER", "smtp.gmail.com"))
+        smtp_server = st.secrets.get("SMTP_SERVER", os.environ.get("SMTP_SERVER", "://gmail.com"))
         
         if not recipient_email:
             recipient_email = smtp_user
@@ -58,15 +57,20 @@ class EnterpriseCoWorkEngine:
                 html_body = body_text.replace("\n", "<br>").replace("**", "<b>").replace("*", "<i>")
                 msg.attach(MIMEText(html_body, 'html'))
             
-            # 🧪 2. FORCED SSL SECURE HANDSHAKE PIPELINE (Bypasses Port 587 local blockages)
+            # Initialize connection pipeline
             server = smtplib.SMTP_SSL(smtp_server, 465)
+            
+            # 🔍 ACTIVATE DEEP NETWORK LOGGING (Forces output logs into your live running console terminal)
+            server.set_debuglevel(1)
+            
             server.login(smtp_user, smtp_pass)
             server.sendmail(smtp_user, recipient_email, msg.as_string())
             server.quit()
             
             return f"✅ Dispatch complete! Rich report successfully sent via SSL to {recipient_email}."
         except Exception as smtp_err:
-            return f"❌ Custom tool connection failed: {smtp_err}"
+            # Catch and output the raw error directly onto the user dashboard view interface
+            return f"❌ Custom tool connection failed with trace info: {str(smtp_err)}"
     def calculate_growth_correlation(self) -> dict:
         """Calculates mathematical Pearson correlation (R) on local table structures."""
         sql = """
