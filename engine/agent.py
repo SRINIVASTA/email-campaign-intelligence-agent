@@ -3,6 +3,7 @@ import re
 import sqlite3
 import pandas as pd
 import smtplib
+from datetime import datetime
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from langchain_groq import ChatGroq
@@ -30,8 +31,8 @@ class EnterpriseCoWorkEngine:
         finally:
             conn.close()
 
-    def send_email_tool(self, body_text: str, recipient_email: str = None, subject: str = "Local Engine Agent Operations Audit") -> str:
-        """Dispatches HTML alerts via standard SMTP layer client using local machine environment settings."""
+    def send_email_tool(self, body_text: str, recipient_email: str = None, subject: str = "Local Engine Agent Operations Audit", is_html: bool = False) -> str:
+        """Dispatches text or styled HTML alerts via standard SMTP layer client using local machine environment settings."""
         smtp_user = os.environ.get("SMTP_USER")
         smtp_pass = os.environ.get("SMTP_PASSWORD")
         smtp_server = os.environ.get("SMTP_SERVER", "://gmail.com")
@@ -44,12 +45,16 @@ class EnterpriseCoWorkEngine:
             return "⚠️ Custom Tool Alert: SMTP credentials missing in local environment settings."
 
         try:
-            html_body = body_text.replace("\n", "<br>").replace("**", "<b>").replace("*", "<i>")
             msg = MIMEMultipart()
             msg['From'] = smtp_user
             msg['To'] = recipient_email
             msg['Subject'] = subject
-            msg.attach(MIMEText(html_body, 'html'))
+            
+            if is_html:
+                msg.attach(MIMEText(body_text, 'html'))
+            else:
+                html_body = body_text.replace("\n", "<br>").replace("**", "<b>").replace("*", "<i>")
+                msg.attach(MIMEText(html_body, 'html'))
             
             server = smtplib.SMTP(smtp_server, smtp_port)
             server.starttls()
@@ -60,7 +65,6 @@ class EnterpriseCoWorkEngine:
             return f"✅ Dispatch complete! Report successfully sent to {recipient_email}."
         except Exception as smtp_err:
             return f"❌ Custom tool failed: {smtp_err}"
-
     def calculate_growth_correlation(self) -> dict:
         """Calculates mathematical Pearson correlation (R) on local table structures."""
         sql = """
@@ -100,9 +104,134 @@ class EnterpriseCoWorkEngine:
                 
         return anomalies
 
+    def run_subscriber_health_audit(self) -> str:
+        """New Agentic Workflow: Algorithmic parsing of subscriber matrices, computing open/bounce rates, and rendering structural responsive HTML emails."""
+        event_query = "SELECT timestamp, campaign_name, event_type FROM email_event_logs;"
+        df_events = self._execute_query_to_df(event_query)
+        
+        if df_events.empty:
+            return "⚠️ Audit aborted: The `email_event_logs` target schema matrix contains no records."
+            
+        total_sent = len(df_events[df_events['event_type'] == 'SENT'])
+        bounces = len(df_events[df_events['event_type'] == 'BOUNCE'])
+        unsubscribes = len(df_events[df_events['event_type'] == 'UNSUBSCRIBE'])
+        opens = len(df_events[df_events['event_type'] == 'OPEN'])
+        
+        bounce_rate = (bounces / total_sent) * 100 if total_sent > 0 else 0.0
+        open_rate = (opens / total_sent) * 100 if total_sent > 0 else 0.0
+        
+        campaign_summary = df_events.groupby(['campaign_name', 'event_type']).size().unstack(fill_value=0).reset_index()
+        campaign_summary.columns = [col.upper() for col in campaign_summary.columns]
+
+        alert_section = ""
+        if bounce_rate > 5.0:
+            alert_section = f"""
+            <div style="background: #fff7ed; border-left: 4px solid #ea580c; color: #c2410c; padding: 15px; border-radius: 0 6px 6px 0; margin-bottom: 25px; font-size: 14px;">
+                <strong>⚠️ CRITICAL INFRASTRUCTURE ALARM:</strong> The detected email infrastructure transmission bounce rate is sitting at <strong>{bounce_rate:.2f}%</strong> (Threshold Limit: 5.0%). Deliverability reputation boundaries are highly threatened.
+            </div>
+            """
+
+        synthesis_prompt = ChatPromptTemplate.from_messages([
+            ("system", "You are an Enterprise Infrastructure & Data deliverability auditor. Review the metrics summary provided and provide a direct, concise 2-sentence executive advisory action statement."),
+            ("user", "System Performance: Total Sent: {sent}, Bounces: {bounces}, Total Unsubscribes: {unsub}, Calculated System Open Ratio: {open_r:.2f}%. Strategy Output:")
+        ])
+        synthesis_chain = synthesis_prompt | self.llm | StrOutputParser()
+        llm_analysis = synthesis_chain.invoke({"sent": total_sent, "bounces": bounces, "unsub": unsubscribes, "open_r": open_rate})
+
+        table_rows_buffer = ""
+        for _, row in campaign_summary.iterrows():
+            table_rows_buffer += f"""
+            <tr>
+                <td style="padding: 12px; font-size: 14px; border-bottom: 1px solid #e2e8f0; color: #334155;"><strong>{row['CAMPAIGN_NAME']}</strong></td>
+                <td style="padding: 12px; font-size: 14px; border-bottom: 1px solid #e2e8f0; color: #334155;">{row.get('SENT', 0)}</td>
+                <td style="padding: 12px; font-size: 14px; border-bottom: 1px solid #e2e8f0; color: #334155;">{row.get('OPEN', 0)}</td>
+                <td style="padding: 12px; font-size: 14px; border-bottom: 1px solid #e2e8f0; color: #334155;">{row.get('CLICK', 0)}</td>
+                <td style="padding: 12px; font-size: 14px; border-bottom: 1px solid #e2e8f0; color: #334155; color: {'#dc2626' if row.get('BOUNCE', 0) > 0 else '#334155'}">{row.get('BOUNCE', 0)}</td>
+            </tr>
+            """
+
+        html_template = """
+        <!DOCTYPE html>
+        <html>
+        <head><meta charset="utf-8"><title>Subscriber Deliverability Telemetry</title></head>
+        <body style="font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f4f6f9; color: #333333; margin: 0; padding: 20px;">
+            <div style="max-width: 650px; background: #ffffff; margin: 0 auto; border-radius: 8px; border: 1px solid #e1e4e8; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                <div style="background: linear-gradient(135deg, #1e293b, #0f172a); padding: 30px 25px; color: #ffffff;">
+                    <h1 style="margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.5px;">📋 SYSTEM DELIVERABILITY & HYGIENE AUDIT</h1>
+                    <p style="margin: 5px 0 0 0; color: #94a3b8; font-size: 14px;">Microservice Diagnostics Pipeline Engine</p>
+                </div>
+                <div style="padding: 25px;">
+                    <div style="display: flex; gap: 15px; margin-bottom: 25px;">
+                        <div style="flex: 1; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 15px; text-align: center;">
+                            <div style="font-size: 24px; font-weight: bold; color: #0f172a;">{OPEN_RATE}</div>
+                            <div style="font-size: 11px; color: #64748b; text-transform: uppercase; font-weight: 600;">Avg Open Ratio</div>
+                        </div>
+                        <div style="flex: 1; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 15px; text-align: center;">
+                            <div style="font-size: 24px; font-weight: bold; color: #0f172a;">{BOUNCE_RATE}</div>
+                            <div style="font-size: 11px; color: #64748b; text-transform: uppercase; font-weight: 600;">Bounce Rate</div>
+                        </div>
+                        <div style="flex: 1; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 15px; text-align: center;">
+                            <div style="font-size: 24px; font-weight: bold; color: #0f172a;">{UNSUBSCRIBES}</div>
+                            <div style="font-size: 11px; color: #64748b; text-transform: uppercase; font-weight: 600;">Total Opt-Outs</div>
+                        </div>
+                    </div>
+                    {ALERT_SECTION}
+                    <h3 style="color: #0f172a; margin-top: 0;">Executive Matrix Summary</h3>
+                    <p style="font-size: 14px; line-height: 1.6; color: #334155;">{LLM_SYNTHESIZED_TEXT}</p>
+                    <h3 style="color: #0f172a; margin-top: 25px;">Granular Data Footprint</h3>
+                    <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+                        <thead>
+                            <tr style="background-color: #f1f5f9;">
+                                <th style="text-align: left; padding: 10px 12px; font-size: 12px; text-transform: uppercase; color: #475569; border-bottom: 2px solid #cbd5e1;">Campaign</th>
+                                <th style="text-align: left; padding: 10px 12px; font-size: 12px; text-transform: uppercase; color: #475569; border-bottom: 2px solid #cbd5e1;">Sent</th>
+                                <th style="text-align: left; padding: 10px 12px; font-size: 12px; text-transform: uppercase; color: #475569; border-bottom: 2px solid #cbd5e1;">Open</th>
+                                <th style="text-align: left; padding: 10px 12px; font-size: 12px; text-transform: uppercase; color: #475569; border-bottom: 2px solid #cbd5e1;">Click</th>
+                                <th style="text-align: left; padding: 10px 12px; font-size: 12px; text-transform: uppercase; color: #475569; border-bottom: 2px solid #cbd5e1;">Bounce</th>
+                            </tr>
+                        </thead>
+                        <tbody>{TABLE_ROWS}</tbody>
+                    </table>
+                </div>
+                <div style="background: #f8fafc; padding: 15px 25px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0;">
+                    Confidential Internal Operations Log. Designed for microservice processing frameworks.
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        final_html = html_template.format(
+            OPEN_RATE=f"{open_rate:.1f}%",
+            BOUNCE_RATE=f"{bounce_rate:.1f}%",
+            UNSUBSCRIBES=str(unsubscribes),
+            ALERT_SECTION=alert_section,
+            LLM_SYNTHESIZED_TEXT=llm_analysis,
+            TABLE_ROWS=table_rows_buffer
+        )
+        
+        output_report_path = os.path.join("pages", "subscriber_health_report.html")
+        os.makedirs(os.path.dirname(output_report_path), exist_ok=True)
+        with open(output_report_path, "w", encoding="utf-8") as f:
+            f.write(final_html)
+            return final_html
+
+---
+
+### Block 3 of 3: Query Interceptor & Main Analytical Execution Pipeline
+This block handles the orchestrator method (`execute_analytical_query`), safely routes calls to the specific analytical pipelines based on text matching keywords, manages data frames, runs the LangChain/Groq chain logic, and sets up automated campaign triggers.
+
+```python
     def execute_analytical_query(self, client_query: str) -> str:
         """Programmatically intercepts specific quick-prompts to deliver data matching the exact scope."""
         
+        # Intercept call if it targets subscriber health audit channels
+        if any(word in client_query.lower() for word in ["subscriber", "health", "bounce", "unsub", "q4"]):
+            html_report = self.run_subscriber_health_audit()
+            if "⚠️" in html_report:
+                return html_report
+            email_status = self.send_email_tool(body_text=html_report, subject="📋 Q4 Executive Operations Audit - Subscriber Health", is_html=True)
+            return f"### 📊 Automated Workflow: Q4 Subscriber Deliverability Report Run\n\nYour HTML report has been generated successfully and written to local microservice system storage components (`pages/subscriber_health_report.html`).\n\n⚙️ **Automated Pipeline Delivery Action:**\n{email_status}"
+
         # 📊 Step 1: Detect explicit query context definitions
         is_q1 = "four quarters" in client_query.lower() or "q1" in client_query.lower()
         is_q2 = "jackets recently" in client_query.lower() or "q2" in client_query.lower()
