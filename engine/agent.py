@@ -32,23 +32,26 @@ class EnterpriseCoWorkEngine:
             conn.close()
 
     def send_email_tool(self, body_text: str, recipient_email: str = None, subject: str = "Local Engine Agent Operations Audit", is_html: bool = False) -> str:
-        """Dispatches text or styled HTML alerts via standard SMTP layer client pulling directly from Streamlit Secrets with Debug Hooks."""
+        """Dispatches HTML alerts via secure SSL pulling matching configurations directly from Streamlit Secrets."""
         import streamlit as st
         
-        smtp_user = st.secrets.get("SMTP_USER", os.environ.get("SMTP_USER"))
-        smtp_pass = st.secrets.get("SMTP_PASSWORD", os.environ.get("SMTP_PASSWORD"))
-        smtp_server = st.secrets.get("SMTP_SERVER", os.environ.get("SMTP_SERVER", "://gmail.com"))
+        # 1. Pull dynamic variables securely from Streamlit Secrets
+        smtp_user = st.secrets.get("SMTP_USER")
+        smtp_pass = st.secrets.get("SMTP_PASSWORD")
+        smtp_server = st.secrets.get("SMTP_SERVER", "smtp.gmail.com")
         
+        # Fall back if no specific recipient parameter is passed down
         if not recipient_email:
-            recipient_email = smtp_user
+            recipient_email = st.secrets.get("REPORT_RECIPIENT", smtp_user)
             
         if not smtp_user or not smtp_pass:
             return "⚠️ Custom Tool Alert: SMTP credentials missing in Streamlit Secrets configuration mappings."
 
         try:
+            # 2. Build explicit security envelope to satisfy Google anti-spoofing filters
             msg = MIMEMultipart()
-            msg['From'] = smtp_user
-            msg['To'] = recipient_email
+            msg['From'] = smtp_user          # Header sender must match authenticated user
+            msg['To'] = recipient_email      # Clear target address line routing descriptor
             msg['Subject'] = subject
             
             if is_html:
@@ -57,19 +60,16 @@ class EnterpriseCoWorkEngine:
                 html_body = body_text.replace("\n", "<br>").replace("**", "<b>").replace("*", "<i>")
                 msg.attach(MIMEText(html_body, 'html'))
             
-            # Initialize connection pipeline
+            # 3. Establish Implicit SSL connection framework across Port 465
             server = smtplib.SMTP_SSL(smtp_server, 465)
-            
-            # 🔍 ACTIVATE DEEP NETWORK LOGGING (Forces output logs into your live running console terminal)
-            server.set_debuglevel(1)
-            
             server.login(smtp_user, smtp_pass)
+            
+            # Broadcast using clean envelope definitions
             server.sendmail(smtp_user, recipient_email, msg.as_string())
             server.quit()
             
-            return f"✅ Dispatch complete! Rich report successfully sent via SSL to {recipient_email}."
+            return f"✅ Dispatch complete! Rich report successfully sent from {smtp_user} to {recipient_email}."
         except Exception as smtp_err:
-            # Catch and output the raw error directly onto the user dashboard view interface
             return f"❌ Custom tool connection failed with trace info: {str(smtp_err)}"
     def calculate_growth_correlation(self) -> dict:
         """Calculates mathematical Pearson correlation (R) on local table structures."""
