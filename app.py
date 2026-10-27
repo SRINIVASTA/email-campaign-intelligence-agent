@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import sqlite3
 import os
+import streamlit.components.v1 as components
 from engine.agent import EnterpriseCoWorkEngine
 from config.semantic_layer import STARTER_QUESTIONS
 
@@ -89,6 +90,14 @@ if user_query:
         try:
             with st.spinner("⚡ Decoupled Engine parsing request across partitions..."):
                 response_text = engine.execute_analytical_query(user_query)
+                
+            # ✅ ADAPTIVE CONDITIONAL INTERCEPTOR RENDERER
+            if "<!DOCTYPE html>" in response_text:
+                st.success("📊 Rich-Text Visual Audit Report Rendered Below:")
+                # Safely parse embedded CSS style matrix layout options inside sandboxed sandbox framework
+                components.html(response_text, height=650, scrolling=True)
+            else:
+                # Default back to standard Markdown rendering for classical analytical outputs
                 st.markdown(response_text)
                 
             # Trigger visualization logs if standard transactional keywords are targeted
