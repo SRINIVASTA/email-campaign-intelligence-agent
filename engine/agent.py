@@ -140,17 +140,18 @@ class EnterpriseCoWorkEngine:
 
         table_rows_buffer = ""
         for _, row in campaign_summary.iterrows():
+            bounce_color = '#dc2626' if row.get('BOUNCE', 0) > 0 else '#334155'
             table_rows_buffer += f"""
             <tr>
                 <td style="padding: 12px; font-size: 14px; border-bottom: 1px solid #e2e8f0; color: #334155;"><strong>{row['CAMPAIGN_NAME']}</strong></td>
                 <td style="padding: 12px; font-size: 14px; border-bottom: 1px solid #e2e8f0; color: #334155;">{row.get('SENT', 0)}</td>
                 <td style="padding: 12px; font-size: 14px; border-bottom: 1px solid #e2e8f0; color: #334155;">{row.get('OPEN', 0)}</td>
                 <td style="padding: 12px; font-size: 14px; border-bottom: 1px solid #e2e8f0; color: #334155;">{row.get('CLICK', 0)}</td>
-                <td style="padding: 12px; font-size: 14px; border-bottom: 1px solid #e2e8f0; color: #334155; color: {'#dc2626' if row.get('BOUNCE', 0) > 0 else '#334155'}">{row.get('BOUNCE', 0)}</td>
+                <td style="padding: 12px; font-size: 14px; border-bottom: 1px solid #e2e8f0; color: #334155; color: {bounce_color}">{row.get('BOUNCE', 0)}</td>
             </tr>
             """
 
-        html_template = """
+        html_template = f"""
         <!DOCTYPE html>
         <html>
         <head><meta charset="utf-8"><title>Subscriber Deliverability Telemetry</title></head>
@@ -163,21 +164,21 @@ class EnterpriseCoWorkEngine:
                 <div style="padding: 25px;">
                     <div style="display: flex; gap: 15px; margin-bottom: 25px;">
                         <div style="flex: 1; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 15px; text-align: center;">
-                            <div style="font-size: 24px; font-weight: bold; color: #0f172a;">{OPEN_RATE}</div>
+                            <div style="font-size: 24px; font-weight: bold; color: #0f172a;">{open_rate:.1f}%</div>
                             <div style="font-size: 11px; color: #64748b; text-transform: uppercase; font-weight: 600;">Avg Open Ratio</div>
                         </div>
                         <div style="flex: 1; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 15px; text-align: center;">
-                            <div style="font-size: 24px; font-weight: bold; color: #0f172a;">{BOUNCE_RATE}</div>
+                            <div style="font-size: 24px; font-weight: bold; color: #0f172a;">{bounce_rate:.2f}%</div>
                             <div style="font-size: 11px; color: #64748b; text-transform: uppercase; font-weight: 600;">Bounce Rate</div>
                         </div>
                         <div style="flex: 1; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 15px; text-align: center;">
-                            <div style="font-size: 24px; font-weight: bold; color: #0f172a;">{UNSUBSCRIBES}</div>
+                            <div style="font-size: 24px; font-weight: bold; color: #0f172a;">{unsubscribes}</div>
                             <div style="font-size: 11px; color: #64748b; text-transform: uppercase; font-weight: 600;">Total Opt-Outs</div>
                         </div>
                     </div>
-                    {ALERT_SECTION}
+                    {alert_section}
                     <h3 style="color: #0f172a; margin-top: 0;">Executive Matrix Summary</h3>
-                    <p style="font-size: 14px; line-height: 1.6; color: #334155;">{LLM_SYNTHESIZED_TEXT}</p>
+                    <p style="font-size: 14px; line-height: 1.6; color: #334155;">{llm_analysis}</p>
                     <h3 style="color: #0f172a; margin-top: 25px;">Granular Data Footprint</h3>
                     <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
                         <thead>
@@ -189,7 +190,7 @@ class EnterpriseCoWorkEngine:
                                 <th style="text-align: left; padding: 10px 12px; font-size: 12px; text-transform: uppercase; color: #475569; border-bottom: 2px solid #cbd5e1;">Bounce</th>
                             </tr>
                         </thead>
-                        <tbody>{TABLE_ROWS}</tbody>
+                        <tbody>{table_rows_buffer}</tbody>
                     </table>
                 </div>
                 <div style="background: #f8fafc; padding: 15px 25px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0;">
@@ -200,31 +201,15 @@ class EnterpriseCoWorkEngine:
         </html>
         """
         
-        final_html = html_template.format(
-            OPEN_RATE=f"{open_rate:.1f}%",
-            BOUNCE_RATE=f"{bounce_rate:.1f}%",
-            UNSUBSCRIBES=str(unsubscribes),
-            ALERT_SECTION=alert_section,
-            LLM_SYNTHESIZED_TEXT=llm_analysis,
-            TABLE_ROWS=table_rows_buffer
-        )
-        
-        # 6. Automatic File Cache Output Configuration Trace Route
         output_report_path = os.path.join("pages", "subscriber_health_report.html")
         os.makedirs(os.path.dirname(output_report_path), exist_ok=True)
         with open(output_report_path, "w", encoding="utf-8") as f:
-            f.write(final_html)
+            f.write(html_template)
             
-        return final_html
-
-
-### Block 3 of 3: Query Interceptor & Main Analytical Execution Pipeline
-This block handles the orchestrator method (`execute_analytical_query`), safely routes calls to the specific analytical pipelines based on text matching keywords, manages data frames, runs the LangChain/Groq chain logic, and sets up automated campaign triggers.
-
+        return html_template
     def execute_analytical_query(self, client_query: str) -> str:
         """Programmatically intercepts specific quick-prompts to deliver data matching the exact scope."""
         
-        # Intercept call if it targets subscriber health audit channels
         if any(word in client_query.lower() for word in ["subscriber", "health", "bounce", "unsub", "q4"]):
             html_report = self.run_subscriber_health_audit()
             if "⚠️" in html_report:
@@ -232,12 +217,10 @@ This block handles the orchestrator method (`execute_analytical_query`), safely 
             email_status = self.send_email_tool(body_text=html_report, subject="📋 Q4 Executive Operations Audit - Subscriber Health", is_html=True)
             return f"### 📊 Automated Workflow: Q4 Subscriber Deliverability Report Run\n\nYour HTML report has been generated successfully and written to local microservice system storage components (`pages/subscriber_health_report.html`).\n\n⚙️ **Automated Pipeline Delivery Action:**\n{email_status}"
 
-        # 📊 Step 1: Detect explicit query context definitions
         is_q1 = "four quarters" in client_query.lower() or "q1" in client_query.lower()
         is_q2 = "jackets recently" in client_query.lower() or "q2" in client_query.lower()
         is_q3 = "fitness wear" in client_query.lower() or "q3" in client_query.lower()
 
-        # 🗄️ Step 2: Compile native local metrics
         anomalies = self.detect_critical_anomalies()
         correlation_results = self.calculate_growth_correlation()
         
@@ -253,7 +236,6 @@ This block handles the orchestrator method (`execute_analytical_query`), safely 
         """
         sales_df = self._execute_query_to_df(sales_sql)
         
-        # 🧠 Step 3: Call parsing pipeline for analytical summary generation
         synthesis_prompt = ChatPromptTemplate.from_messages([
             ("system", """You are a Local Enterprise Marketing Analyst operating inside a Python microservice framework.
 Your job is to read the raw local SQLite database matrix, calculated correlations, and detected operational anomalies, then build a scannable executive summary report.
@@ -284,7 +266,6 @@ Executive Summary Layout Structure:
             "anomaly_data": "\n".join(anomalies) if anomalies else "None detected."
         })
 
-        # ⚡ Step 4: PROGRAMMATIC SEPARATE AUTOMATED EMAIL TRIGGERS
         if is_q1:
             subject = "📊 Q1 Executive Operations Audit - 2025 Sales Trends"
             email_status = self.send_email_tool(body_text=report_output, subject=subject)
