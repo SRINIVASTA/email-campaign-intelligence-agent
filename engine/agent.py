@@ -222,6 +222,7 @@ class EnterpriseCoWorkEngine:
 This block handles the orchestrator method (`execute_analytical_query`), safely routes calls to the specific analytical pipelines based on text matching keywords, manages data frames, runs the LangChain/Groq chain logic, and sets up automated campaign triggers.
 
     def execute_analytical_query(self, client_query: str) -> str:
+        """Programmatically intercepts specific quick-prompts to deliver data matching the exact scope."""
         
         # Intercept call if it targets subscriber health audit channels
         if any(word in client_query.lower() for word in ["subscriber", "health", "bounce", "unsub", "q4"]):
