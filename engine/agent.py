@@ -35,10 +35,10 @@ class EnterpriseCoWorkEngine:
         """Dispatches HTML alerts via secure SSL pulling matching configurations directly from Streamlit Secrets."""
         import streamlit as st
         
-        # 1. Pull dynamic variables securely from Streamlit Secrets
+        # 1. Pull authentication identifiers securely from Streamlit Secrets
         smtp_user = st.secrets.get("SMTP_USER")
         smtp_pass = st.secrets.get("SMTP_PASSWORD")
-        smtp_server = st.secrets.get("SMTP_SERVER", "smtp.gmail.com")
+        smtp_server = st.secrets.get("SMTP_SERVER", "://gmail.com")
         
         # Fall back if no specific recipient parameter is passed down
         if not recipient_email:
@@ -48,23 +48,22 @@ class EnterpriseCoWorkEngine:
             return "⚠️ Custom Tool Alert: SMTP credentials missing in Streamlit Secrets configuration mappings."
 
         try:
-            # 2. Build explicit security envelope to satisfy Google anti-spoofing filters
+            # 2. Build explicit envelope headers to satisfy Google anti-spoofing filters
             msg = MIMEMultipart()
-            msg['From'] = smtp_user          # Header sender must match authenticated user
-            msg['To'] = recipient_email      # Clear target address line routing descriptor
+            msg['From'] = smtp_user          # MUST be the exact Gmail address that logged in
+            msg['To'] = recipient_email      # The target email address
             msg['Subject'] = subject
             
             if is_html:
                 msg.attach(MIMEText(body_text, 'html'))
             else:
-                html_body = body_text.replace("\n", "<br>").replace("**", "<b>").replace("*", "<i>")
-                msg.attach(MIMEText(html_body, 'html'))
+                msg.attach(MIMEText(body_text, 'plain'))
             
-            # 3. Establish Implicit SSL connection framework across Port 465
+            # 3. Establish SSL Connection Framework across Port 465
             server = smtplib.SMTP_SSL(smtp_server, 465)
             server.login(smtp_user, smtp_pass)
             
-            # Broadcast using clean envelope definitions
+            # 4. Force envelope consistency (From, To, Payload)
             server.sendmail(smtp_user, recipient_email, msg.as_string())
             server.quit()
             
