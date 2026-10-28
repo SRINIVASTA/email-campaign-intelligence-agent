@@ -1,8 +1,6 @@
 # 🤖 Enterprise Intelligence Data Agent (Production Architecture)
 
-A decoupled, local analytics microservice architecture designed for enterprise operational data processing. 
-
-A decentralized, local analytics microservice architecture designed to parse enterprise sales, performance metrics, social sentiment, and customer service data. It merges local algorithmic execution using Pandas and keyword scanning with automated data hygiene and structured LLM synthesis to generate HTML executive reports.
+A decentralized, local analytics microservice architecture designed to parse enterprise sales, cross-channel performance metrics, social sentiment, and customer service data. It merges local algorithmic execution using Pandas matrix math and text keyword scanning with automated record hygiene loops and structured LLM synthesis to generate highly visual, responsive HTML executive reports.
 
 All components are dynamically aligned with the project's data schema requirements, enforcing strict uppercase data dimensions and utilizing local SQLite processing layers.
 
@@ -24,21 +22,21 @@ graph TD
     end
 
     subgraph Analytical Processing
-        Pandas -->|Pearson R Calculation| Calc[Marketing Channel Correlation]
-        Pandas -->|Text Keyword Scan| Anom[Support Case Anomaly Detector]
-        Pandas -->|List Cleanse Sweep| Hygiene[Automated Subscriber Hygiene Engine]
+        Pandas -->|Pearson R Calculation| Calc[Cross-Channel Performance Correlation]
+        Pandas -->|Text Keyword Scan| Anom[Service Case Anomaly Detector]
+        Pandas -->|Record Cleanse Sweep| Hygiene[Automated System Record Hygiene Engine]
     end
 
     subgraph Report Synthesis & Automation
         Calc & Anom & Hygiene -->|Context Matrices| LLM[Groq Layer Engine]
         LLM -->|Formatted Executive Summary| Orchestrator{Query Classifier}
         Orchestrator -->|Rich HTML Sandboxed Preview| Streamlit
-        Orchestrator -->|Forced Port 465 SSL Trigger| SMTP[Secure Outbound Gmail Gateway]
+        Orchestrator -->|Forced Port 465 SSL Trigger| SMTP[Secure Outbound Corporate Gateway]
     end
 ```
 
 ### 2. Database Schema Mappings
-Enforced across the application to ensure flawless joins, cross-channel calculation lookups, and subscriber telemetry delivery tracking:
+Enforced across the application to ensure flawless joins, cross-channel calculation lookups, and system telemetry delivery tracking:
 
 ```mermaid
 erDiagram
@@ -54,46 +52,46 @@ erDiagram
         INTEGER UNITS_SOLD
         REAL SALES_AMOUNT
     }
-    marketing_campaign_metrics {
+    performance_metrics {
         TEXT DATE
         TEXT CATEGORY
-        TEXT CAMPAIGN_NAME
+        TEXT CHANNEL_NAME
         INTEGER IMPRESSIONS
-        INTEGER CLICKS
+        INTEGER ENGAGEMENTS
     }
-    social_media {
+    social_sentiment {
         TEXT DATE
         TEXT CATEGORY
         TEXT PLATFORM
         TEXT INFLUENCER
         INTEGER MENTIONS
     }
-    support_cases {
+    service_cases {
         TEXT id PK
         TEXT title
         TEXT product
         TEXT transcript
         TEXT date
     }
-    subscribers {
-        INTEGER SUBSCRIBER_ID PK
+    system_users {
+        INTEGER USER_ID PK
         TEXT EMAIL
         TEXT FIRST_NAME
         TEXT JOIN_DATE
         TEXT STATUS
     }
-    email_event_logs {
+    system_event_logs {
         INTEGER EVENT_ID PK
         TEXT TIMESTAMP
-        TEXT CAMPAIGN_NAME
-        INTEGER SUBSCRIBER_ID FK
+        TEXT CHANNEL_NAME
+        INTEGER USER_ID FK
         TEXT EVENT_TYPE
-        TEXT LINK_URL
+        TEXT REFERENCE_URL
     }
 
     sales }o--|| products : "joins via PRODUCT_ID"
-    social_media }o--|| marketing_campaign_metrics : "correlates via CATEGORY"
-    email_event_logs }o--|| subscribers : "tracks via SUBSCRIBER_ID"
+    social_sentiment }o--|| performance_metrics : "correlates via CATEGORY"
+    system_event_logs }o--|| system_users : "tracks via USER_ID"
 ```
 
 ---
@@ -106,7 +104,7 @@ Follow these sequential steps to configure your environment variables and boot t
 Ensure you have Python 3.10+ installed on your local machine.
 ```bash
 git clone https://github.com
-cd email-campaign-intelligence-agent
+cd enterprise-intelligence-data-agent
 pip install -r requirements.txt
 ```
 
@@ -122,7 +120,7 @@ Open the `secrets.toml` file and populate it with your active processing paramet
 GROQ_API_KEY = "gsk_your_actual_groq_api_token_here"
 
 # ✉️ Secure Outbound Mail Gateway Routing Parameters
-SMTP_SERVER = "://gmail.com"
+SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 465
 SMTP_USER = "your_authenticated_corporate_email@gmail.com"
 SMTP_PASSWORD = "your_16_character_google_app_password"
@@ -150,9 +148,9 @@ streamlit run app.py
 The application dashboard provides four pre-onboarded automated quick-prompt tasks:
 
 *   **📋 Q1: Trend Analysis (Sales Audit):** Compiles the full annual transactional history matrix across all product categories. Automatically sends out a summary report titled `📊 Q1 Executive Operations Audit - 2025 Sales Trends`.
-*   **⚠️ Q2: Feedback Auditing (Jacket Quality Risk):** Scans customer support logs for structural defects. Programmatically isolates critical anomalies (such as the *Thermal Expedition Parka* armpit seam tearing failures) and sends out an alert titled `⚠️ Q2 Executive Operations Audit - Product Quality Log`.
-*   **📈 Q3: Growth Correlation Run (Marketing RPC):** Performs a Pearson Product-Moment Correlation calculation ($R = 0.9652$) between email click logs and active social media impressions. Delivers a report titled `📈 Q3 Executive Operations Audit - Channel Correlation Run`.
-*   **🛡️ Q4: Subscriber Hygiene (Deliverability Matrix):** Evaluates campaign open-to-bounce boundaries. It computes live delivery telemetry logs, **automatically switches hard-bounced or opted-out email row records to inactive status metrics**, and dispatches a rich-text HTML advisory report titled `📋 Q4 Executive Operations Audit - Subscriber Health`.
+*   **⚠️ Q2: Feedback Auditing (Jacket Quality Risk):** Scans customer service logs for structural defects. Programmatically isolates critical anomalies (such as the *Thermal Expedition Parka* armpit seam tearing failures) and sends out an alert titled `⚠️ Q2 Executive Operations Audit - Product Quality Log`.
+*   **📈 Q3: Growth Correlation Run (Performance RPC):** Performs a Pearson Product-Moment Correlation calculation ($R = 0.9652$) between internal system click logs and active social media impressions. Delivers a report titled `📈 Q3 Executive Operations Audit - Channel Correlation Run`.
+*   **🛡️ Q4: Record Hygiene (System Integrity Matrix):** Evaluates interaction boundaries and bounce thresholds. It computes live delivery telemetry logs, **automatically switches broken or deactivated user row records to inactive status metrics**, and dispatches a rich-text HTML advisory report titled `📋 Q4 Executive Operations Audit - System User Base Health`.
 
 ---
 
