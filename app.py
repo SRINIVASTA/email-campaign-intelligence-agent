@@ -8,8 +8,8 @@ import streamlit.components.v1 as components
 from engine.agent import EnterpriseCoWorkEngine
 from config.semantic_layer import STARTER_QUESTIONS
 
-st.set_page_config(page_title="Email Campaign Agent Workspace", layout="wide")
-st.title("✉️ Email Campaign Automation Hub (Production Architecture)")
+st.set_page_config(page_title="Enterprise Intelligence Agent Workspace", layout="wide")
+st.title("🤖 Enterprise Intelligence Data Agent (Production Architecture)")
 
 # ------------------------------------------------------------------
 # 1. STREAMLIT SECRETS INGESTION LAYER
