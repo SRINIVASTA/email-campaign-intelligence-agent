@@ -1,6 +1,8 @@
-# ✉️ Local Email Campaign & Marketing Intelligence Agent
+# 🤖 Enterprise Intelligence Data Agent (Production Architecture)
 
-A decoupled, local analytics microservice architecture that parses enterprise sales, marketing campaign metrics, social media buzz, and customer support data. The system combines local algorithmic execution (Pandas matrix math & keyword text scanning) with automated list hygiene loops and structured LLM synthesis to deliver high-visual responsive HTML email reports.
+A decoupled, local analytics microservice architecture designed for enterprise operational data processing. 
+
+A decentralized, local analytics microservice architecture designed to parse enterprise sales, performance metrics, social sentiment, and customer service data. It merges local algorithmic execution using Pandas and keyword scanning with automated data hygiene and structured LLM synthesis to generate HTML executive reports.
 
 All components are dynamically aligned with the project's data schema requirements, enforcing strict uppercase data dimensions and utilizing local SQLite processing layers.
 
