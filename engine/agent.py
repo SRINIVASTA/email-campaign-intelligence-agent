@@ -31,43 +31,48 @@ class EnterpriseCoWorkEngine:
         finally:
             conn.close()
 
-    def send_email_tool(self, body_text: str, recipient_email: str = None, subject: str = "Local Engine Agent Operations Audit", is_html: bool = False) -> str:
-        """Dispatches HTML alerts via secure SSL pulling matching configurations directly from Streamlit Secrets."""
+    def send_email_tool(self, body_text: str, recipient_email: str = None, subject: str = "Local Engine Agent Operations Audit", attachment_path: str = None) -> str:
+        """Dispatches text alerts with optional document attachments via secure SSL port 465."""
         import streamlit as st
+        from email.mime.base import MIMEBase
+        from email import encoders
         
-        # 1. Pull authentication identifiers securely from Streamlit Secrets
         smtp_user = st.secrets.get("SMTP_USER")
         smtp_pass = st.secrets.get("SMTP_PASSWORD")
         smtp_server = st.secrets.get("SMTP_SERVER", "://gmail.com")
         
-        # Fall back if no specific recipient parameter is passed down
         if not recipient_email:
             recipient_email = st.secrets.get("REPORT_RECIPIENT", smtp_user)
             
         if not smtp_user or not smtp_pass:
-            return "⚠️ Custom Tool Alert: SMTP credentials missing in Streamlit Secrets configuration mappings."
+            return "⚠️ Custom Tool Alert: SMTP credentials missing in Streamlit Secrets."
 
         try:
-            # 2. Build explicit envelope headers to satisfy Google anti-spoofing filters
             msg = MIMEMultipart()
             msg['From'] = smtp_user          
             msg['To'] = recipient_email      
             msg['Subject'] = subject
             
-            if is_html:
-                msg.attach(MIMEText(body_text, 'html'))
-            else:
-                msg.attach(MIMEText(body_text, 'plain'))
+            msg.attach(MIMEText(body_text, 'plain'))
             
-            # 3. Establish SSL Connection Framework across Port 465
+            # Attaches binary file documents safely if explicitly defined
+            if attachment_path and os.path.exists(attachment_path):
+                with open(attachment_path, "rb") as attachment:
+                    part = MIMEBase("application", "octet-stream")
+                    part.set_payload(attachment.read())
+                encoders.encode_base64(part)
+                part.add_header(
+                    "Content-Disposition",
+                    f"attachment; filename={os.path.basename(attachment_path)}",
+                )
+                msg.attach(part)
+            
             server = smtplib.SMTP_SSL(smtp_server, 465)
             server.login(smtp_user, smtp_pass)
-            
-            # 4. Force envelope consistency (From, To, Payload)
             server.sendmail(smtp_user, recipient_email, msg.as_string())
             server.quit()
             
-            return f"✅ Dispatch complete! Rich report successfully sent from {smtp_user} to {recipient_email}."
+            return f"✅ Dispatch complete! Report successfully sent to {recipient_email}."
         except Exception as smtp_err:
             return f"❌ Custom tool connection failed with trace info: {str(smtp_err)}"
     def calculate_growth_correlation(self) -> dict:
@@ -212,91 +217,98 @@ class EnterpriseCoWorkEngine:
             f.write(html_template)
             
         return html_template
-    def execute_analytical_query(self, client_query: str) -> str:
-        """Programmatically parses specific prompts to generate and email data summaries."""
+    def execute_analytical_query(self, client_query: str, export_format: str = "text") -> str:
+        """Programmatically branches report formats dynamically based on selector variables."""
+        from reportlab.lib.pagesizes import letter
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib import colors
         
-        # 1. Map target logic tags based on keywords
         is_q1 = "four quarters" in client_query.lower() or "q1" in client_query.lower()
         is_q2 = "jackets recently" in client_query.lower() or "q2" in client_query.lower()
         is_q3 = "fitness wear" in client_query.lower() or "q3" in client_query.lower()
         is_q4 = any(word in client_query.lower() for word in ["subscriber", "health", "bounce", "unsub", "q4"])
 
-        # 2. Gather context matrix states from the environment
         anomalies = self.detect_critical_anomalies()
         correlation_results = self.calculate_growth_correlation()
         
-        # Standard analytical queries for metrics dashboards
         sales_sql = """
-            SELECT 
-                p.category,
-                'Q' || ((cast(strftime('%m', s.date) as integer) - 1) / 3 + 1) as quarter,
-                SUM(s.sales_amount) as revenue,
-                SUM(s.units_sold) as units
-            FROM sales s
-            JOIN products p ON s.product_id = p.product_id
-            GROUP BY p.category, quarter
+            SELECT p.category, 'Q' || ((cast(strftime('%m', s.date) as integer) - 1) / 3 + 1) as quarter,
+                   SUM(s.sales_amount) as revenue, SUM(s.units_sold) as units
+            FROM sales s JOIN products p ON s.product_id = p.product_id GROUP BY p.category, quarter
         """
         sales_df = self._execute_query_to_df(sales_sql)
         
-        # 3. Pull subscriber logistics records specifically if Q4 is requested
         subscriber_metrics = ""
         if is_q4:
-            # Generates the local HTML asset loop file automatically as requested
             self.run_subscriber_health_audit() 
             event_sql = "SELECT campaign_name, event_type, COUNT(*) as volume FROM email_event_logs GROUP BY campaign_name, event_type"
             subscriber_metrics = self._execute_query_to_df(event_sql).to_markdown(index=False)
 
-        # 4. Construct unified prompt matrix context block
+        # Base Analysis Compiler Block
         synthesis_prompt = ChatPromptTemplate.from_messages([
-            ("system", """You are a Local Enterprise Marketing Analyst operating inside a Python microservice framework.
-Your job is to read the raw local SQLite database matrix, calculated correlations, and detected operational anomalies, then build a scannable executive summary report.
-Highlight calculated values accurately without changing them. Ensure clear bold text styling for entities."""),
-            ("user", """
-Query Request: {query}
-Raw Sales Matrix Data:
-{sales_data}
-
-Calculated Marketing Correlation Matrix (Clicks vs Social Mentions):
-{correlation_data}
-Pearson Correlation Coefficient (R): {r_value}
-
-Detected Workspace Operational Anomalies:
-{anomaly_data}
-
-Subscriber Delivery Logs (If Applicable):
-{subscriber_data}
-
-Executive Summary Layout Structure:
-""")
+            ("system", "You are an Enterprise Infrastructure & Data deliverability auditor. Review the workspace metrics and provide a 4-sentence executive advisory action statement."),
+            ("user", "Query: {query}\nSales: {sales_data}\nAnomalies: {anomaly_data}\nSubscribers: {subscriber_data}\nStrategy Output:")
         ])
-        
         synthesis_chain = synthesis_prompt | self.llm | StrOutputParser()
-        
         report_output = synthesis_chain.invoke({
-            "query": client_query,
-            "sales_data": sales_df.to_markdown(index=False),
-            "correlation_data": str(correlation_results["data"]),
-            "r_value": correlation_results["r_value"],
-            "anomaly_data": "\n".join(anomalies) if anomalies else "None detected.",
-            "subscriber_data": subscriber_metrics if subscriber_metrics else "Not requested for this runtime query."
+            "query": client_query, "sales_data": sales_df.to_markdown(index=False),
+            "anomaly_data": "\n".join(anomalies) if anomalies else "None.",
+            "subscriber_data": subscriber_metrics if subscriber_metrics else "N/A"
         })
 
-        # 5. Pipeline Actions Route Layer (Unified Email Dispatches)
+        # 📄 NATIVE RICH PDF LAYOUT GENERATOR COMPILER BLOCK
+        pdf_path = None
+        if is_q4 and export_format.lower() == "pdf":
+            pdf_dir = "pages"
+            os.makedirs(pdf_dir, exist_ok=True)
+            pdf_path = os.path.join(pdf_dir, "subscriber_health_report.pdf")
+            
+            doc = SimpleDocTemplate(pdf_path, pagesize=letter, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
+            story = []
+            styles = getSampleStyleSheet()
+            
+            title_style = ParagraphStyle('DocTitle', parent=styles['Heading1'], fontSize=18, textColor=colors.HexColor("#0f172a"), spaceAfter=15)
+            body_style = ParagraphStyle('DocBody', parent=styles['Normal'], fontSize=10, leading=15, textColor=colors.HexColor("#334155"), spaceAfter=12)
+            
+            story.append(Paragraph("📋 SYSTEM DELIVERABILITY & HYGIENE REPORT", title_style))
+            story.append(Paragraph(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} • Format: Verified Rich PDF", body_style))
+            story.append(Spacer(1, 10))
+            
+            story.append(Paragraph("<b>Executive Strategy Analysis Summary:</b>", ParagraphStyle('H3', parent=styles['Heading3'], spaceAfter=6)))
+            story.append(Paragraph(report_output, body_style))
+            story.append(Spacer(1, 10))
+            
+            event_query = "SELECT timestamp, campaign_name, event_type FROM email_event_logs;"
+            df_events = self._execute_query_to_df(event_query)
+            if not df_events.empty:
+                campaign_summary = df_events.groupby(['campaign_name', 'event_type']).size().unstack(fill_value=0).reset_index()
+                table_data = [[Paragraph(f"<b>{col.upper()}</b>", body_style) for col in campaign_summary.columns]]
+                for _, row in campaign_summary.iterrows():
+                    table_data.append([Paragraph(str(val), body_style) for val in row.values])
+                
+                perf_table = Table(table_data)
+                perf_table.setStyle(TableStyle([
+                    ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#f1f5f9")),
+                    ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#cbd5e1")),
+                    ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                    ('BOTTOMPADDING', (0,0), (-1,-1), 6),
+                ]))
+                story.append(Paragraph("<b>Granular Performance Telemetry Matrix:</b>", ParagraphStyle('H3_2', parent=styles['Heading3'], spaceAfter=6)))
+                story.append(perf_table)
+            
+            doc.build(story)
+
+        # ⚡ ROUTING ARCHITECTURE
         if is_q1:
-            subject = "📊 Q1 Executive Operations Audit - 2025 Sales Trends"
-            email_status = self.send_email_tool(body_text=report_output, subject=subject)
-            report_output += f"\n\n⚙️ **Automated Pipeline Action:**\n{email_status}"
+            email_status = self.send_email_tool(body_text=report_output, subject="📊 Q1 Operations Audit - Sales Trends")
         elif is_q2:
-            subject = "⚠️ Q2 Executive Operations Audit - Product Quality Log"
-            email_status = self.send_email_tool(body_text=report_output, subject=subject)
-            report_output += f"\n\n⚙️ **Automated Pipeline Action:**\n{email_status}"
+            email_status = self.send_email_tool(body_text=report_output, subject="⚠️ Q2 Operations Audit - Product Quality Log")
         elif is_q3:
-            subject = "📈 Q3 Executive Operations Audit - Channel Correlation Run"
-            email_status = self.send_email_tool(body_text=report_output, subject=subject)
-            report_output += f"\n\n⚙️ **Automated Pipeline Action:**\n{email_status}"
+            email_status = self.send_email_tool(body_text=report_output, subject="📈 Q3 Operations Audit - Channel Correlation Run")
         elif is_q4:
-            subject = "📋 Q4 Executive Operations Audit - Subscriber Health"
-            email_status = self.send_email_tool(body_text=report_output, subject=subject)
-            report_output += f"\n\n⚙️ **Automated Pipeline Action:**\n{email_status}\n\n*(Note: Your visual HTML layout dashboard remains compiled inside `pages/subscriber_health_report.html`)*"
+            subj = "📋 Q4 Delivery Audit - " + ("Rich PDF Attachment" if pdf_path else "Plain Text Summary")
+            email_status = self.send_email_tool(body_text=report_output, subject=subj, attachment_path=pdf_path)
+            report_output += f"\n\n⚙️ **Automated Pipeline Action:**\n{email_status}"
             
         return report_output
