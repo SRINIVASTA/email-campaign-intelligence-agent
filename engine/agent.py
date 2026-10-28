@@ -50,8 +50,8 @@ class EnterpriseCoWorkEngine:
         try:
             # 2. Build explicit envelope headers to satisfy Google anti-spoofing filters
             msg = MIMEMultipart()
-            msg['From'] = smtp_user          # MUST be the exact Gmail address that logged in
-            msg['To'] = recipient_email      # The target email address
+            msg['From'] = smtp_user          
+            msg['To'] = recipient_email      
             msg['Subject'] = subject
             
             if is_html:
@@ -213,77 +213,19 @@ class EnterpriseCoWorkEngine:
             
         return html_template
     def execute_analytical_query(self, client_query: str) -> str:
-        """Programmatically intercepts specific quick-prompts to deliver data matching the exact scope."""
+        """Programmatically parses specific prompts to generate and email data summaries."""
         
-        # Intercept call if it targets subscriber health audit channels
-        if any(word in client_query.lower() for word in ["subscriber", "health", "bounce", "unsub", "q4"]):
-            html_report = self.run_subscriber_health_audit()
-            if "⚠️" in html_report:
-                return html_report
-            
-            import streamlit as st
-            target_inbox = st.secrets.get("REPORT_RECIPIENT", st.secrets.get("SMTP_USER"))
-            
-            # Algorithmic Data Extraction Layer to avoid Google HTML spam blocks
-            event_query = "SELECT timestamp, campaign_name, event_type FROM email_event_logs;"
-            df_events = self._execute_query_to_df(event_query)
-            
-            total_sent = len(df_events[df_events['event_type'] == 'SENT'])
-            bounces = len(df_events[df_events['event_type'] == 'BOUNCE'])
-            unsubscribes = len(df_events[df_events['event_type'] == 'UNSUBSCRIBE'])
-            opens = len(df_events[df_events['event_type'] == 'OPEN'])
-            
-            bounce_rate = (bounces / total_sent) * 100 if total_sent > 0 else 0.0
-            open_rate = (opens / total_sent) * 100 if total_sent > 0 else 0.0
-            
-            campaign_summary = df_events.groupby(['campaign_name', 'event_type']).size().unstack(fill_value=0).reset_index()
-            campaign_summary.columns = [col.upper() for col in campaign_summary.columns]
-            
-            # Build an anti-phishing plain text framework payload
-            text_email_body = f"""
-===================================================
-📋 SYSTEM DELIVERABILITY & HYGIENE AUDIT REPORT
-===================================================
-Generated via Local Intelligence Pipeline Engine
-Execution Timestamp: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
-
-[CORE TELEMETRY TARGET KPIs]
-- Avg Open Ratio: {open_rate:.1f}%
-- System Bounce Rate: {bounce_rate:.2f}%
-- Total Opt-Outs: {unsubscribes}
-
----------------------------------------------------
-⚠️ STATUS ALERT TRACKER
----------------------------------------------------
-{'CRITICAL INFRASTRUCTURE ALARM: Bounce rate limits exceeded 5.0% threshold boundary metrics.' if bounce_rate > 5.0 else 'System health processing bounds running within safe historical levels.'}
-
----------------------------------------------------
-📊 GRANULAR CAMPAIGN PERFORMANCE MATRIX
----------------------------------------------------
-{campaign_summary.to_string(index=False)}
-
----------------------------------------------------
-Confidential Internal Operations Log.
-===================================================
-            """
-            
-            # Dispatch the email as clean, secure text instead of rich HTML
-            email_status = self.send_email_tool(
-                body_text=text_email_body, 
-                recipient_email=target_inbox,
-                subject="📊 Q4 Operational Audit Report - Plain Text Sync", 
-                is_html=False  # 👈 Crucial: Swapped to False to force secure text rendering
-            )
-            
-            return f"### 📊 Automated Workflow: Q4 Subscriber Deliverability Report Run\n\nYour visual dashboard HTML asset remains generated locally inside your container file log (`pages/subscriber_health_report.html`).\n\n⚙️ **Automated Pipeline Delivery Action:**\n{email_status}"
-
+        # 1. Map target logic tags based on keywords
         is_q1 = "four quarters" in client_query.lower() or "q1" in client_query.lower()
         is_q2 = "jackets recently" in client_query.lower() or "q2" in client_query.lower()
         is_q3 = "fitness wear" in client_query.lower() or "q3" in client_query.lower()
+        is_q4 = any(word in client_query.lower() for word in ["subscriber", "health", "bounce", "unsub", "q4"])
 
+        # 2. Gather context matrix states from the environment
         anomalies = self.detect_critical_anomalies()
         correlation_results = self.calculate_growth_correlation()
         
+        # Standard analytical queries for metrics dashboards
         sales_sql = """
             SELECT 
                 p.category,
@@ -296,6 +238,15 @@ Confidential Internal Operations Log.
         """
         sales_df = self._execute_query_to_df(sales_sql)
         
+        # 3. Pull subscriber logistics records specifically if Q4 is requested
+        subscriber_metrics = ""
+        if is_q4:
+            # Generates the local HTML asset loop file automatically as requested
+            self.run_subscriber_health_audit() 
+            event_sql = "SELECT campaign_name, event_type, COUNT(*) as volume FROM email_event_logs GROUP BY campaign_name, event_type"
+            subscriber_metrics = self._execute_query_to_df(event_sql).to_markdown(index=False)
+
+        # 4. Construct unified prompt matrix context block
         synthesis_prompt = ChatPromptTemplate.from_messages([
             ("system", """You are a Local Enterprise Marketing Analyst operating inside a Python microservice framework.
 Your job is to read the raw local SQLite database matrix, calculated correlations, and detected operational anomalies, then build a scannable executive summary report.
@@ -312,6 +263,9 @@ Pearson Correlation Coefficient (R): {r_value}
 Detected Workspace Operational Anomalies:
 {anomaly_data}
 
+Subscriber Delivery Logs (If Applicable):
+{subscriber_data}
+
 Executive Summary Layout Structure:
 """)
         ])
@@ -323,9 +277,11 @@ Executive Summary Layout Structure:
             "sales_data": sales_df.to_markdown(index=False),
             "correlation_data": str(correlation_results["data"]),
             "r_value": correlation_results["r_value"],
-            "anomaly_data": "\n".join(anomalies) if anomalies else "None detected."
+            "anomaly_data": "\n".join(anomalies) if anomalies else "None detected.",
+            "subscriber_data": subscriber_metrics if subscriber_metrics else "Not requested for this runtime query."
         })
 
+        # 5. Pipeline Actions Route Layer (Unified Email Dispatches)
         if is_q1:
             subject = "📊 Q1 Executive Operations Audit - 2025 Sales Trends"
             email_status = self.send_email_tool(body_text=report_output, subject=subject)
@@ -338,5 +294,9 @@ Executive Summary Layout Structure:
             subject = "📈 Q3 Executive Operations Audit - Channel Correlation Run"
             email_status = self.send_email_tool(body_text=report_output, subject=subject)
             report_output += f"\n\n⚙️ **Automated Pipeline Action:**\n{email_status}"
+        elif is_q4:
+            subject = "📋 Q4 Executive Operations Audit - Subscriber Health"
+            email_status = self.send_email_tool(body_text=report_output, subject=subject)
+            report_output += f"\n\n⚙️ **Automated Pipeline Action:**\n{email_status}\n\n*(Note: Your visual HTML layout dashboard remains compiled inside `pages/subscriber_health_report.html`)*"
             
         return report_output
