@@ -94,10 +94,10 @@ input_query = st.chat_input("Query web workspace files...")
 user_query = input_query if input_query else selected_query
 
 # ------------------------------------------------------------------
-# 5. CORE EXECUTION AND LIVE VISUALIZATION INTERCEPTOR
+# 5. CORE EXECUTION AND LIVE VISUALIZATION INTERCEPTOR (ALL QUARTERS)
 # ------------------------------------------------------------------
 if user_query:
-    # 💡 Append the interactive delivery parameters onto the query string layer for the backend parser engine
+    # Append the selected formatting choice parameter onto the backend logic request pipeline
     format_suffix = " [MODE: PDF]" if "PDF" in report_format else " [MODE: TEXT]"
     processing_query = user_query + format_suffix
     
@@ -108,32 +108,30 @@ if user_query:
             with st.spinner("⚡ Decoupled Engine parsing request across partitions..."):
                 response_text = engine.execute_analytical_query(processing_query)
                 
-            # Render out the standard LLM synthesis insights logs on screen
+            # Render out the standard LLM analysis summaries on your monitor interface
             st.markdown(response_text)
                 
-            # ✅ IF PDF ATTACHMENT MODE SHIFT IS SELECTED: Inject local file browser download button parameters cleanly
-            if "PDF" in report_format and any(word in user_query.lower() for word in ["subscriber", "health", "bounce", "unsub", "q4"]):
-                pdf_target_path = os.path.join("pages", "subscriber_health_report.pdf")
+            # ✅ UNIVERSAL ATTACHMENT HANDLING: Injects a download button for any quarter if PDF mode is active
+            if "PDF" in report_format:
+                pdf_target_path = os.path.join("pages", "executive_operations_report.pdf")
                 if os.path.exists(pdf_target_path):
                     with open(pdf_target_path, "rb") as pdf_file:
                         st.download_button(
-                            label="📥 Download Compiled Rich-Text Operational PDF",
+                            label="📥 Download Generated Rich-Text Executive PDF Report",
                             data=pdf_file,
-                            file_name=f"Subscriber_Health_Audit_{datetime.now().strftime('%Y%m%d')}.pdf",
+                            file_name=f"Enterprise_Operations_Audit_{datetime.now().strftime('%Y%m%d')}.pdf",
                             mime="application/pdf",
                             use_container_width=True
                         )
             
-            # Trigger visualization logs if standard transactional keywords are targeted
+            # Interactive visualization graph chart tracking engines
             if any(word in user_query.lower() for word in ["trend", "sales", "grow", "correlate", "quarter"]):
                 st.info("📊 Local Visualization Handler Triggered:")
                 conn = sqlite3.connect(DB_PATH)
                 viz_df = pd.read_sql_query("""
                     SELECT s.date, p.category, SUM(s.sales_amount) as revenue_total 
-                    FROM sales s 
-                    JOIN products p ON s.product_id = p.product_id 
-                    GROUP BY s.date, p.category
-                    ORDER BY s.date ASC
+                    FROM sales s JOIN products p ON s.product_id = p.product_id 
+                    GROUP BY s.date, p.category ORDER BY s.date ASC
                 """, conn)
                 conn.close()
                 
