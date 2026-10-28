@@ -83,7 +83,7 @@ input_query = st.chat_input("Query web workspace files...")
 user_query = input_query if input_query else selected_query
 
 # ------------------------------------------------------------------
-# 5. CORE EXECUTION AND LIVE VISUALIZATION INTERCEPTOR
+# 5. CORE EXECUTION AND LIVE VISUALIZATION INTERCEPTOR (OPTIMIZED)
 # ------------------------------------------------------------------
 if user_query:
     st.chat_message("user").markdown(user_query)
@@ -93,17 +93,17 @@ if user_query:
             with st.spinner("⚡ Decoupled Engine parsing request across partitions..."):
                 response_text = engine.execute_analytical_query(user_query)
                 
-            # ✅ ADAPTIVE CONDITIONAL INTERCEPTOR RENDERER
-            if "<!DOCTYPE html>" in response_text or "📋 SYSTEM DELIVERABILITY" in response_text:
-                if "<!DOCTYPE html>" in response_text:
-                    st.success("📊 Rich-Text Visual Audit Report Rendered Below:")
-                    components.html(response_text, height=650, scrolling=True)
-                else:
-                    st.success("📊 Text Audit Report Rendered Below:")
-                    st.text(response_text)
-            else:
-                st.markdown(response_text)
+            # Render the markdown text report (this shows your email text & dispatch logs)
+            st.markdown(response_text)
                 
+            # ✅ NEW: Automatically intercept Q4 to render the matching visual HTML dashboard file
+            if any(word in user_query.lower() for word in ["subscriber", "health", "bounce", "unsub", "q4"]):
+                report_html_path = os.path.join("pages", "subscriber_health_report.html")
+                if os.path.exists(report_html_path):
+                    st.success("📊 Rich-Text Visual Audit Report Rendered From Container File:")
+                    with open(report_html_path, "r", encoding="utf-8") as html_file:
+                        components.html(html_file.read(), height=650, scrolling=True)
+            
             # Trigger visualization logs if standard transactional keywords are targeted
             if any(word in user_query.lower() for word in ["trend", "sales", "grow", "correlate", "quarter"]):
                 st.info("📊 Local Visualization Handler Triggered:")
