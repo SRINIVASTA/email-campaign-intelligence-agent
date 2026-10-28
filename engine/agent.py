@@ -53,9 +53,10 @@ class EnterpriseCoWorkEngine:
             msg['To'] = recipient_email      
             msg['Subject'] = subject
             
+            # Attach the main executive overview message
             msg.attach(MIMEText(body_text, 'plain'))
             
-            # Attaches binary file documents safely if explicitly defined
+            # Handle document attachment processing loops securely
             if attachment_path and os.path.exists(attachment_path):
                 with open(attachment_path, "rb") as attachment:
                     part = MIMEBase("application", "octet-stream")
@@ -217,8 +218,8 @@ class EnterpriseCoWorkEngine:
             f.write(html_template)
             
         return html_template
-    def execute_analytical_query(self, client_query: str, export_format: str = "text") -> str:
-        """Programmatically branches report formats dynamically based on selector variables."""
+    def execute_analytical_query(self, client_query: str) -> str:
+        """Programmatically parses prompts, writes native rich layout PDFs, and transmits file attachments."""
         from reportlab.lib.pagesizes import letter
         from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
         from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -228,6 +229,7 @@ class EnterpriseCoWorkEngine:
         is_q2 = "jackets recently" in client_query.lower() or "q2" in client_query.lower()
         is_q3 = "fitness wear" in client_query.lower() or "q3" in client_query.lower()
         is_q4 = any(word in client_query.lower() for word in ["subscriber", "health", "bounce", "unsub", "q4"])
+        prefer_pdf = "[mode: pdf]" in client_query.lower()
 
         anomalies = self.detect_critical_anomalies()
         correlation_results = self.calculate_growth_correlation()
@@ -245,9 +247,9 @@ class EnterpriseCoWorkEngine:
             event_sql = "SELECT campaign_name, event_type, COUNT(*) as volume FROM email_event_logs GROUP BY campaign_name, event_type"
             subscriber_metrics = self._execute_query_to_df(event_sql).to_markdown(index=False)
 
-        # Base Analysis Compiler Block
+        # Prompt Synthesis Context Block
         synthesis_prompt = ChatPromptTemplate.from_messages([
-            ("system", "You are an Enterprise Infrastructure & Data deliverability auditor. Review the workspace metrics and provide a 4-sentence executive advisory action statement."),
+            ("system", "You are an Enterprise Infrastructure & Data deliverability auditor. Review the workspace parameters and build a concise executive summary report."),
             ("user", "Query: {query}\nSales: {sales_data}\nAnomalies: {anomaly_data}\nSubscribers: {subscriber_data}\nStrategy Output:")
         ])
         synthesis_chain = synthesis_prompt | self.llm | StrOutputParser()
@@ -257,9 +259,11 @@ class EnterpriseCoWorkEngine:
             "subscriber_data": subscriber_metrics if subscriber_metrics else "N/A"
         })
 
-        # 📄 NATIVE RICH PDF LAYOUT GENERATOR COMPILER BLOCK
+        # -------------------------------------------------------------
+        # NATIVE RICH PDF LAYOUT GENERATOR COMPILER BLOCK
+        # -------------------------------------------------------------
         pdf_path = None
-        if is_q4 and export_format.lower() == "pdf":
+        if is_q4 and prefer_pdf:
             pdf_dir = "pages"
             os.makedirs(pdf_dir, exist_ok=True)
             pdf_path = os.path.join(pdf_dir, "subscriber_health_report.pdf")
@@ -268,14 +272,14 @@ class EnterpriseCoWorkEngine:
             story = []
             styles = getSampleStyleSheet()
             
-            title_style = ParagraphStyle('DocTitle', parent=styles['Heading1'], fontSize=18, textColor=colors.HexColor("#0f172a"), spaceAfter=15)
-            body_style = ParagraphStyle('DocBody', parent=styles['Normal'], fontSize=10, leading=15, textColor=colors.HexColor("#334155"), spaceAfter=12)
+            title_style = ParagraphStyle('DocTitle', parent=styles['Heading1'], fontSize=18, leading=22, textColor=colors.HexColor("#0f172a"), spaceAfter=15)
+            body_style = ParagraphStyle('DocBody', parent=styles['Normal'], fontSize=10, leading=14, textColor=colors.HexColor("#334155"), spaceAfter=12)
             
-            story.append(Paragraph("📋 SYSTEM DELIVERABILITY & HYGIENE REPORT", title_style))
-            story.append(Paragraph(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} • Format: Verified Rich PDF", body_style))
+            story.append(Paragraph("📋 SYSTEM DELIVERABILITY & HYGIENE AUDIT REPORT", title_style))
+            story.append(Paragraph(f"<b>Generated Context:</b> Automated Pipeline Engine • {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", body_style))
             story.append(Spacer(1, 10))
             
-            story.append(Paragraph("<b>Executive Strategy Analysis Summary:</b>", ParagraphStyle('H3', parent=styles['Heading3'], spaceAfter=6)))
+            story.append(Paragraph("<b>Executive Summary Strategy Analysis:</b>", ParagraphStyle('Sub', parent=styles['Heading3'], spaceAfter=5)))
             story.append(Paragraph(report_output, body_style))
             story.append(Spacer(1, 10))
             
@@ -283,6 +287,7 @@ class EnterpriseCoWorkEngine:
             df_events = self._execute_query_to_df(event_query)
             if not df_events.empty:
                 campaign_summary = df_events.groupby(['campaign_name', 'event_type']).size().unstack(fill_value=0).reset_index()
+                
                 table_data = [[Paragraph(f"<b>{col.upper()}</b>", body_style) for col in campaign_summary.columns]]
                 for _, row in campaign_summary.iterrows():
                     table_data.append([Paragraph(str(val), body_style) for val in row.values])
@@ -290,25 +295,35 @@ class EnterpriseCoWorkEngine:
                 perf_table = Table(table_data)
                 perf_table.setStyle(TableStyle([
                     ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#f1f5f9")),
+                    ('BOTTOMPADDING', (0,0), (-1,0), 6),
                     ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#cbd5e1")),
                     ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-                    ('BOTTOMPADDING', (0,0), (-1,-1), 6),
                 ]))
-                story.append(Paragraph("<b>Granular Performance Telemetry Matrix:</b>", ParagraphStyle('H3_2', parent=styles['Heading3'], spaceAfter=6)))
+                story.append(Paragraph("<b>Granular Performance Metric Telemetry:</b>", ParagraphStyle('Sub2', parent=styles['Heading3'], spaceAfter=5)))
                 story.append(perf_table)
             
             doc.build(story)
 
-        # ⚡ ROUTING ARCHITECTURE
+        # -------------------------------------------------------------
+        # SECURE ROUTING LAYER WITH DYNAMIC ATTACHMENT SWITCHING
+        # -------------------------------------------------------------
         if is_q1:
             email_status = self.send_email_tool(body_text=report_output, subject="📊 Q1 Operations Audit - Sales Trends")
+            report_output += f"\n\n⚙️ **Automated Pipeline Action:**\n{email_status}"
         elif is_q2:
             email_status = self.send_email_tool(body_text=report_output, subject="⚠️ Q2 Operations Audit - Product Quality Log")
+            report_output += f"\n\n⚙️ **Automated Pipeline Action:**\n{email_status}"
         elif is_q3:
             email_status = self.send_email_tool(body_text=report_output, subject="📈 Q3 Operations Audit - Channel Correlation Run")
-        elif is_q4:
-            subj = "📋 Q4 Delivery Audit - " + ("Rich PDF Attachment" if pdf_path else "Plain Text Summary")
-            email_status = self.send_email_tool(body_text=report_output, subject=subj, attachment_path=pdf_path)
             report_output += f"\n\n⚙️ **Automated Pipeline Action:**\n{email_status}"
+        elif is_q4:
+            if prefer_pdf:
+                subject = "📋 Q4 Operational Delivery Audit - Rich PDF"
+                email_status = self.send_email_tool(body_text=report_output, subject=subject, attachment_path=pdf_path)
+                report_output += f"\n\n⚙️ **Automated Pipeline Action:**\n{email_status}"
+            else:
+                subject = "📋 Q4 Operational Delivery Audit - Plain Text Sync"
+                email_status = self.send_email_tool(body_text=report_output, subject=subject, attachment_path=None)
+                report_output += f"\n\n⚙️ **Automated Pipeline Action:**\n{email_status}"
             
         return report_output
