@@ -3,6 +3,7 @@ import pandas as pd
 import sqlite3
 import os
 import time
+from datetime import datetime
 import streamlit.components.v1 as components
 from engine.agent import EnterpriseCoWorkEngine
 from config.semantic_layer import STARTER_QUESTIONS
@@ -35,7 +36,7 @@ if not os.path.exists(DB_PATH):
         st.stop()
 
 # ------------------------------------------------------------------
-# 3. LIVE SYSTEM TELEMETRY SIDEBAR HANDLER
+# 3. LIVE SYSTEM TELEMETRY SIDEBAR & EXPORT FORMAT SWITCH MATRIX
 # ------------------------------------------------------------------
 conn = sqlite3.connect(DB_PATH)
 with st.sidebar:
@@ -56,6 +57,16 @@ with st.sidebar:
             st.caption(f"💾 **{table}**: {count} Verified Rows in web partition.")
         except Exception as e:
             st.caption(f"⚠️ **{table}**: Schema partition locked or loading.")
+            
+    st.markdown("---")
+    st.markdown("### ⚙️ Dispatch Export Format Settings")
+    # 💡 NEW: Adds the delivery preference matrix toggles inside the side layout panel
+    report_format = st.radio(
+        "Choose Deliverability Export Output Mode:",
+        options=["Standard Plain Text Sync", "Rich-Text Professional PDF Attachment"],
+        index=1,
+        help="Select standard inline text formatting or full multi-page document attachment packaging."
+    )
 conn.close()
 
 # ------------------------------------------------------------------
@@ -83,26 +94,35 @@ input_query = st.chat_input("Query web workspace files...")
 user_query = input_query if input_query else selected_query
 
 # ------------------------------------------------------------------
-# 5. CORE EXECUTION AND LIVE VISUALIZATION INTERCEPTOR (OPTIMIZED)
+# 5. CORE EXECUTION AND LIVE VISUALIZATION INTERCEPTOR
 # ------------------------------------------------------------------
 if user_query:
+    # 💡 Append the interactive delivery parameters onto the query string layer for the backend parser engine
+    format_suffix = " [MODE: PDF]" if "PDF" in report_format else " [MODE: TEXT]"
+    processing_query = user_query + format_suffix
+    
     st.chat_message("user").markdown(user_query)
     
     with st.chat_message("assistant"):
         try:
             with st.spinner("⚡ Decoupled Engine parsing request across partitions..."):
-                response_text = engine.execute_analytical_query(user_query)
+                response_text = engine.execute_analytical_query(processing_query)
                 
-            # Render the markdown text report (this shows your email text & dispatch logs)
+            # Render out the standard LLM synthesis insights logs on screen
             st.markdown(response_text)
                 
-            # ✅ NEW: Automatically intercept Q4 to render the matching visual HTML dashboard file
-            if any(word in user_query.lower() for word in ["subscriber", "health", "bounce", "unsub", "q4"]):
-                report_html_path = os.path.join("pages", "subscriber_health_report.html")
-                if os.path.exists(report_html_path):
-                    st.success("📊 Rich-Text Visual Audit Report Rendered From Container File:")
-                    with open(report_html_path, "r", encoding="utf-8") as html_file:
-                        components.html(html_file.read(), height=650, scrolling=True)
+            # ✅ IF PDF ATTACHMENT MODE SHIFT IS SELECTED: Inject local file browser download button parameters cleanly
+            if "PDF" in report_format and any(word in user_query.lower() for word in ["subscriber", "health", "bounce", "unsub", "q4"]):
+                pdf_target_path = os.path.join("pages", "subscriber_health_report.pdf")
+                if os.path.exists(pdf_target_path):
+                    with open(pdf_target_path, "rb") as pdf_file:
+                        st.download_button(
+                            label="📥 Download Compiled Rich-Text Operational PDF",
+                            data=pdf_file,
+                            file_name=f"Subscriber_Health_Audit_{datetime.now().strftime('%Y%m%d')}.pdf",
+                            mime="application/pdf",
+                            use_container_width=True
+                        )
             
             # Trigger visualization logs if standard transactional keywords are targeted
             if any(word in user_query.lower() for word in ["trend", "sales", "grow", "correlate", "quarter"]):
