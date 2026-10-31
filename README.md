@@ -5,6 +5,9 @@ A decentralized, local analytics microservice architecture designed to parse ent
 All components are dynamically aligned with the project's data schema requirements, enforcing strict uppercase data dimensions and utilizing local SQLite processing layers.
 
 ---
+![Desktop Screenshot](assets/desktop-screenshot.png)
+
+---
 
 ## 📊 System Architecture & Process Flow
 
