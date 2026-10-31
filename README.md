@@ -35,6 +35,7 @@ graph TD
         LLM -->|Formatted Executive Summary| Orchestrator{Query Classifier}
         Orchestrator -->|Rich HTML Sandboxed Preview| Streamlit
         Orchestrator -->|Forced Port 465 SSL Trigger| SMTP[Secure Outbound Corporate Gateway]
+        SMTP -->|Automated Broadcast| Inbox[Concerned Stakeholder's Email Inbox]
     end
 ```
 
